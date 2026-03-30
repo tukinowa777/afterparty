@@ -249,12 +249,14 @@ function buildSearchParams() {
 }
 
 function renderEmpty() {
+  const distanceMeters = Number.parseInt(distanceSelect.value, 10);
+  const distanceLabel = Number.isFinite(distanceMeters) ? `${distanceMeters}m` : "現在の距離条件";
   resultsHeader.hidden = false;
   resultsMeta.textContent = "0件ヒット";
   resultsList.innerHTML = `
     <article class="empty">
       <h3>条件に合う店がありません</h3>
-      <p>人数、予算、距離、ジャンルを少し広げると候補が見つかりやすくなります。</p>
+      <p>${distanceLabel}以内では見つかりませんでした。距離を少し広げると候補が見つかりやすくなります。</p>
     </article>
   `;
 }
@@ -542,7 +544,13 @@ function applyFiltersFromUrl() {
 function bindSearchButton() {
   [searchButton, searchButtonBottom].forEach((button) => {
     button.addEventListener("click", () => {
-      if (!hasReliableLocation()) {
+      if (button === searchButtonBottom) {
+        state.searchMode = "station";
+        state.location.label = `${state.selectedStation}駅周辺`;
+        state.location.detail = "下の条件で駅を検索起点にしています";
+        state.location.accuracy = null;
+        setLocationNote("下の条件を優先して駅周辺を検索しています。結果は上に表示します。");
+      } else if (!hasReliableLocation()) {
         setLocationNote("現在地の精度が低いため検索できません。屋外で再取得するか、駅から探してください。");
         return;
       }
