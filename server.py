@@ -500,7 +500,7 @@ def normalizeHotpepperVenue(shop):
     except (KeyError, TypeError, ValueError):
         return None
 
-    excludedGenreCodes = {"G014", "G015", "G013"}
+    excludedGenreCodes = {"G014", "G015", "G013", "G006", "G007"}
     genreCode = shop.get("genre", {}).get("code", "")
     subGenreCode = shop.get("sub_genre", {}).get("code", "")
     if genreCode in excludedGenreCodes or subGenreCode in excludedGenreCodes:
@@ -515,6 +515,8 @@ def normalizeHotpepperVenue(shop):
         priceRange = "low"
 
     genreNames = [shop.get("genre", {}).get("name", ""), shop.get("sub_genre", {}).get("name", "")]
+    if any(keyword in " ".join(genreNames) for keyword in ["フレンチ", "イタリアン", "ビストロ", "スペイン", "各国料理"]):
+        return None
     cuisineKeys = normalizeHotpepperCuisines(genreNames)
     openUntilHour = normalizeHotpepperOpenUntilHour(shop.get("open", ""), shop.get("midnight", ""))
     features = buildHotpepperFeatures(shop)
