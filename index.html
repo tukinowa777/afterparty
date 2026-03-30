@@ -13,7 +13,8 @@
     <main class="page">
       <section class="hero">
         <p class="eyebrow">After Party Finder</p>
-        <h1>夜9時以降に入れる二次会向け居酒屋を、現在地から3件提案</h1>
+        <h1>二次会探すくん</h1>
+        <h2 class="hero-subtitle">夜9時以降に入れる二次会向け居酒屋を、現在地から3件提案</h2>
         <p class="lead">
           現在地、予算、人数、料理ジャンル、移動距離で絞り込んで、遅い時間でも入りやすい店を提案します。
         </p>
@@ -28,6 +29,16 @@
           </div>
           <button id="locateButton" class="locate-button" type="button">現在地を使う</button>
         </div>
+
+        <section class="results results-in-hero">
+          <div class="results-header">
+            <h2>おすすめ3件</h2>
+            <p id="resultsMeta">3件ヒット</p>
+          </div>
+          <p id="statusMessage" class="status-message" hidden></p>
+          <p id="sourceNote" class="source-note" hidden></p>
+          <div id="resultsList" class="results-list"></div>
+        </section>
 
         <div class="mobile-guide">
           <p class="mobile-guide-title">スマホで使うときのポイント</p>
@@ -108,15 +119,6 @@
         </label>
       </section>
 
-      <section class="results">
-        <div class="results-header">
-          <h2>おすすめ3件</h2>
-          <p id="resultsMeta">3件ヒット</p>
-        </div>
-        <p id="statusMessage" class="status-message" hidden></p>
-        <p id="sourceNote" class="source-note" hidden></p>
-        <div id="resultsList" class="results-list"></div>
-      </section>
     </main>
 
     <script src="./app.js"></script>

@@ -57,6 +57,13 @@ h1 {
   line-height: 1.08;
 }
 
+.hero-subtitle {
+  margin: 10px 0 0;
+  font-size: clamp(1.1rem, 2.2vw, 1.55rem);
+  line-height: 1.4;
+  color: #dfe8f3;
+}
+
 .lead {
   max-width: 720px;
   color: #d4dce6;
@@ -236,6 +243,10 @@ select {
 
 .results {
   margin-top: 22px;
+}
+
+.results-in-hero {
+  margin-top: 18px;
 }
 
 .results-header {
