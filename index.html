@@ -15,19 +15,18 @@
         <p class="eyebrow">After Party Finder</p>
         <h1>二次会探すくん</h1>
         <h2 class="hero-subtitle">夜9時以降に入れる二次会向け居酒屋を、現在地から3件提案</h2>
-        <p class="lead">
-          現在地、予算、人数、料理ジャンル、移動距離で絞り込んで、遅い時間でも入りやすい店を提案します。
-        </p>
 
         <div class="location-card">
           <div>
             <p class="location-label">検索の起点</p>
             <p class="location-value" id="locationLabel">新宿駅周辺</p>
-            <p class="location-note" id="locationNote">
-              位置情報を取得すると、現在地に近い順でおすすめを再計算します。
-            </p>
+            <p class="location-note" id="locationNote">現在地を取得してから「探す」を押すとおすすめを表示します。</p>
           </div>
           <button id="locateButton" class="locate-button" type="button">現在地を使う</button>
+        </div>
+
+        <div class="hero-actions">
+          <button id="searchButton" class="search-button" type="button">探す</button>
         </div>
 
         <section class="results results-in-hero">

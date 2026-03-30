@@ -142,6 +142,7 @@ const state = {
 const locationLabel = document.getElementById("locationLabel");
 const locationNote = document.getElementById("locationNote");
 const locateButton = document.getElementById("locateButton");
+const searchButton = document.getElementById("searchButton");
 const partySizeInput = document.getElementById("partySize");
 const lineSelect = document.getElementById("lineSelect");
 const stationSelect = document.getElementById("stationSelect");
@@ -334,12 +335,11 @@ function bindSearchMode() {
       state.searchMode = chip.dataset.mode;
       if (state.searchMode === "station") {
         state.location.label = `${state.selectedStation || "駅"}周辺`;
-        setLocationNote("選択した駅を検索の起点にしています。");
+        setLocationNote("選択した駅を検索の起点にしています。『探す』を押すとおすすめを表示します。");
       } else {
-        setLocationNote("位置情報を取得すると、現在地に近い順でおすすめを再計算します。");
+        setLocationNote("現在地を取得してから『探す』を押すとおすすめを表示します。");
       }
       updateSearchModeUi();
-      loadVenues();
     });
   });
 
@@ -347,15 +347,13 @@ function bindSearchMode() {
     state.selectedLine = lineSelect.value;
     renderStationOptions();
     state.location.label = `${state.selectedStation}駅周辺`;
-    setLocationNote("選択した駅を検索の起点にしています。");
-    loadVenues();
+    setLocationNote("選択した駅を検索の起点にしています。『探す』を押すとおすすめを表示します。");
   });
 
   stationSelect.addEventListener("change", () => {
     state.selectedStation = stationSelect.value;
     state.location.label = `${state.selectedStation}駅周辺`;
-    setLocationNote("選択した駅を検索の起点にしています。");
-    loadVenues();
+    setLocationNote("選択した駅を検索の起点にしています。『探す』を押すとおすすめを表示します。");
   });
 }
 
@@ -364,16 +362,12 @@ function bindBudgetChips() {
     chip.addEventListener("click", () => {
       state.budget = chip.dataset.budget;
       updateBudgetUi();
-      loadVenues();
     });
   });
 }
 
 function bindForm() {
-  [partySizeInput, cuisineSelect, distanceSelect, openAfter21Checkbox].forEach((node) => {
-    node.addEventListener("input", loadVenues);
-    node.addEventListener("change", loadVenues);
-  });
+  return;
 }
 
 function bindGeolocation() {
@@ -401,13 +395,12 @@ function requestCurrentLocation(isAutomatic) {
       state.searchMode = "gps";
       setLocationNote(
         isAutomatic
-          ? "現在地の利用が許可されました。この場所からおすすめ3件を表示しています。"
-          : "現在地を取得しました。この場所からおすすめ3件を再計算しています。"
+          ? "現在地の利用が許可されました。「探す」を押すとおすすめを表示します。"
+          : "現在地を取得しました。『探す』を押すとおすすめを表示します。"
       );
       locateButton.disabled = false;
       locateButton.textContent = "現在地を使う";
       updateSearchModeUi();
-      loadVenues();
     },
     () => {
       setLocationNote(
@@ -425,29 +418,7 @@ function requestCurrentLocation(isAutomatic) {
 }
 
 async function autoRequestCurrentLocation() {
-  if (state.autoLocateAttempted || state.searchMode !== "gps") {
-    return;
-  }
-
-  state.autoLocateAttempted = true;
-
-  if (!navigator.geolocation) {
-    return;
-  }
-
-  if (navigator.permissions && navigator.permissions.query) {
-    try {
-      const permissionStatus = await navigator.permissions.query({ name: "geolocation" });
-      if (permissionStatus.state === "denied") {
-        setLocationNote("位置情報は拒否されています。下の『駅から探す』も使えます。");
-        return;
-      }
-    } catch (error) {
-      // 権限APIに依存しない
-    }
-  }
-
-  requestCurrentLocation(true);
+  return Promise.resolve();
 }
 
 function applyFiltersFromUrl() {
@@ -528,6 +499,12 @@ function bindShareButton() {
   });
 }
 
+function bindSearchButton() {
+  searchButton.addEventListener("click", () => {
+    loadVenues();
+  });
+}
+
 async function loadVenues() {
   const queryString = buildSearchParams().toString();
   state.lastQueryString = queryString;
@@ -577,6 +554,7 @@ bindForm();
 bindGeolocation();
 bindSearchMode();
 bindShareButton();
+bindSearchButton();
 
 async function loadStations() {
   const response = await fetch("./api/stations", {
@@ -608,10 +586,9 @@ async function bootstrap() {
   updateSearchModeUi();
   if (state.searchMode === "station" && state.selectedStation) {
     state.location.label = `${state.selectedStation}駅周辺`;
-    setLocationNote("選択した駅を検索の起点にしています。");
+    setLocationNote("選択した駅を検索の起点にしています。『探す』を押すとおすすめを表示します。");
   }
   await autoRequestCurrentLocation();
-  loadVenues();
 }
 
 bootstrap();

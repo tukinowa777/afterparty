@@ -53,21 +53,16 @@ body {
 
 h1 {
   margin: 0;
-  font-size: clamp(2rem, 4vw, 3.7rem);
+  font-size: clamp(1.8rem, 3.6vw, 3.2rem);
   line-height: 1.08;
 }
 
 .hero-subtitle {
   margin: 10px 0 0;
-  font-size: clamp(1.1rem, 2.2vw, 1.55rem);
-  line-height: 1.4;
+  max-width: 28rem;
+  font-size: clamp(0.98rem, 1.8vw, 1.25rem);
+  line-height: 1.45;
   color: #dfe8f3;
-}
-
-.lead {
-  max-width: 720px;
-  color: #d4dce6;
-  line-height: 1.7;
 }
 
 .location-card {
@@ -140,6 +135,23 @@ h1 {
   padding: 12px 18px;
   border-radius: 999px;
   font-weight: 700;
+}
+
+.hero-actions {
+  margin-top: 14px;
+}
+
+.search-button {
+  width: 100%;
+  border: 0;
+  cursor: pointer;
+  background: var(--accent);
+  color: #fff;
+  min-height: 50px;
+  padding: 12px 18px;
+  border-radius: 999px;
+  font-size: 1rem;
+  font-weight: 800;
 }
 
 .filters {
@@ -404,7 +416,12 @@ select {
   }
 
   .locate-button,
+  .search-button,
   .share-button {
     width: 100%;
+  }
+
+  .hero-subtitle {
+    max-width: 19rem;
   }
 }
