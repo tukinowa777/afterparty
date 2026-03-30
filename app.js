@@ -157,7 +157,6 @@ const resultsMeta = document.getElementById("resultsMeta");
 const resultsList = document.getElementById("resultsList");
 const loadingIndicator = document.getElementById("loadingIndicator");
 const budgetGroup = document.getElementById("budgetGroup");
-const searchModeGroup = document.getElementById("searchModeGroup");
 const stationFields = document.getElementById("stationFields");
 const statusMessage = document.getElementById("statusMessage");
 const sourceNote = document.getElementById("sourceNote");
@@ -307,10 +306,7 @@ function setLocationNote(message) {
 }
 
 function updateSearchModeUi() {
-  searchModeGroup.querySelectorAll(".chip").forEach((node) => {
-    node.classList.toggle("active", node.dataset.mode === state.searchMode);
-  });
-  stationFields.hidden = state.searchMode !== "station";
+  stationFields.hidden = false;
 }
 
 function updateBudgetUi() {
@@ -377,36 +373,13 @@ function renderStationOptions() {
 }
 
 function bindSearchMode() {
-  searchModeGroup.querySelectorAll(".chip").forEach((chip) => {
-    chip.addEventListener("click", () => {
-      state.searchMode = chip.dataset.mode;
-      if (state.searchMode === "station") {
-        state.location.label = `${state.selectedStation || "駅"}周辺`;
-        state.location.detail = "駅を検索起点にしています";
-        state.location.accuracy = null;
-        setLocationNote("選択した駅を検索の起点にしています。『探す』を押すとおすすめを表示します。");
-      } else {
-        setLocationNote("現在地を取得してから『探す』を押すとおすすめを表示します。");
-      }
-      updateSearchModeUi();
-    });
-  });
-
   lineSelect.addEventListener("change", () => {
     state.selectedLine = lineSelect.value;
     renderStationOptions();
-    state.location.label = `${state.selectedStation}駅周辺`;
-    state.location.detail = "駅を検索起点にしています";
-    state.location.accuracy = null;
-    setLocationNote("選択した駅を検索の起点にしています。『探す』を押すとおすすめを表示します。");
   });
 
   stationSelect.addEventListener("change", () => {
     state.selectedStation = stationSelect.value;
-    state.location.label = `${state.selectedStation}駅周辺`;
-    state.location.detail = "駅を検索起点にしています";
-    state.location.accuracy = null;
-    setLocationNote("選択した駅を検索の起点にしています。『探す』を押すとおすすめを表示します。");
   });
 }
 
