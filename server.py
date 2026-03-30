@@ -518,7 +518,7 @@ def normalizeHotpepperVenue(shop):
     if any(keyword in " ".join(genreNames) for keyword in ["フレンチ", "イタリアン", "ビストロ", "スペイン", "各国料理"]):
         return None
     cuisineKeys = normalizeHotpepperCuisines(genreNames)
-    openUntilHour = normalizeHotpepperOpenUntilHour(shop.get("open", ""), shop.get("midnight", ""))
+    openInfo = normalizeHotpepperOpenInfo(shop.get("open", ""), shop.get("midnight", ""))
     features = buildHotpepperFeatures(shop)
 
     return {
@@ -528,7 +528,9 @@ def normalizeHotpepperVenue(shop):
         "longitude": longitude,
         "walkMinutes": 0,
         "nearestStation": shop.get("station_name", "現在地周辺"),
-        "openUntilHour": openUntilHour,
+        "openUntilHour": openInfo["closeHour"],
+        "closeLabel": openInfo["closeLabel"],
+        "lastOrderLabel": openInfo["lastOrderLabel"],
         "priceRange": priceRange,
         "minPartySize": 1,
         "maxPartySize": parseInt(shop.get("party_capacity"), 12),
@@ -607,22 +609,34 @@ def normalizeHotpepperCuisines(genreNames):
     return cuisineKeys
 
 
-def normalizeHotpepperOpenUntilHour(openText, midnightText):
-    if midnightText == "営業している":
-        return 24
+def normalizeHotpepperOpenInfo(openText, midnightText):
+    closeMatches = re.findall(r"(\d{1,2}:\d{2}|翌\d{1,2}:\d{2})", openText)
+    loMatches = re.findall(r"L\.O\.\s*(翌?\d{1,2}:\d{2})", openText)
 
-    hourCandidates = []
-    for rawHour in re.findall(r"(翌)?(\d{1,2}):\d{2}", openText):
-        isNextDay, hourText = rawHour
-        hourValue = int(hourText)
-        if isNextDay:
-            hourValue += 24
-        hourCandidates.append(hourValue)
+    closeLabel = closeMatches[-1] if closeMatches else "要確認"
+    lastOrderLabel = loMatches[-1] if loMatches else "要確認"
 
-    if hourCandidates:
-        return max(hourCandidates)
+    closeHour = 24 if midnightText == "営業している" else convertHourLabelToValue(closeLabel)
+    if closeHour is None:
+        closeHour = 24
 
-    return 24
+    return {
+        "closeHour": closeHour,
+        "closeLabel": closeLabel,
+        "lastOrderLabel": lastOrderLabel,
+    }
+
+
+def convertHourLabelToValue(hourLabel):
+    matched = re.search(r"(翌)?(\d{1,2}):(\d{2})", hourLabel)
+    if not matched:
+        return None
+
+    isNextDay = matched.group(1)
+    hourValue = int(matched.group(2))
+    if isNextDay:
+        hourValue += 24
+    return hourValue
 
 
 def buildHotpepperFeatures(shop):

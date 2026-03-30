@@ -174,6 +174,12 @@ function formatHour(hour) {
   return `${String(hour).padStart(2, "0")}:00`;
 }
 
+function formatBusinessHours(venue) {
+  const closeLabel = venue.closeLabel || formatHour(venue.openUntilHour);
+  const lastOrderLabel = venue.lastOrderLabel || "要確認";
+  return `営業 ${closeLabel}まで / LO ${lastOrderLabel}`;
+}
+
 function buildMapLink(venue) {
   const params = new URLSearchParams({
     api: "1",
@@ -285,7 +291,7 @@ function renderRecommendations() {
         <div class="meta">
           <span class="pill">徒歩${venue.walkMinutes}分</span>
           <span class="pill">${Math.round(venue.distanceMeters)}m</span>
-          <span class="pill">営業 ${formatHour(venue.openUntilHour)}まで</span>
+          <span class="pill">${formatBusinessHours(venue)}</span>
           <span class="pill">${venue.minPartySize}-${venue.maxPartySize}名</span>
         </div>
         <p class="genres">${venue.cuisines.map((item) => cuisineLabels[item]).join(" / ")}</p>
