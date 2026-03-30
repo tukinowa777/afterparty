@@ -304,6 +304,10 @@ select {
   font-weight: 700;
 }
 
+.loading-indicator[hidden] {
+  display: none !important;
+}
+
 .loading-dot {
   width: 8px;
   height: 8px;
