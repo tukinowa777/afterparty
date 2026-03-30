@@ -145,7 +145,7 @@ def parseFilters(queryString):
         "partySize": parseInt(params.get("partySize", ["4"])[0], 4),
         "maxBudget": params.get("budget", ["mid"])[0],
         "cuisine": params.get("cuisine", ["any"])[0],
-        "maxDistanceMeters": parseInt(params.get("distance", ["2500"])[0], 2500),
+        "maxDistanceMeters": parseInt(params.get("distance", ["100"])[0], 100),
         "requireOpenAfter21": params.get("openAfter21", ["true"])[0] != "false",
         "latitude": parseFloat(params.get("latitude", ["35.6895"])[0], 35.6895),
         "longitude": parseFloat(params.get("longitude", ["139.6917"])[0], 139.6917),
@@ -656,7 +656,7 @@ def saveStationCoordinateCache(cachePayload):
 
 
 def buildOverpassQuery(filters):
-    radius = min(max(filters["maxDistanceMeters"], 1000), 5000)
+    radius = min(max(filters["maxDistanceMeters"], 100), 5000)
 
     return f"""
 [out:json][timeout:10];
