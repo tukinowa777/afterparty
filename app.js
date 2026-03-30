@@ -379,10 +379,20 @@ function bindSearchMode() {
   lineSelect.addEventListener("change", () => {
     state.selectedLine = lineSelect.value;
     renderStationOptions();
+    state.searchMode = "station";
+    state.location.label = `${state.selectedStation}駅周辺`;
+    state.location.detail = "駅を検索起点にしています";
+    state.location.accuracy = null;
+    setLocationNote("下の条件で駅周辺を検索します。『探す』を押すと上に結果を表示します。");
   });
 
   stationSelect.addEventListener("change", () => {
     state.selectedStation = stationSelect.value;
+    state.searchMode = "station";
+    state.location.label = `${state.selectedStation}駅周辺`;
+    state.location.detail = "駅を検索起点にしています";
+    state.location.accuracy = null;
+    setLocationNote("下の条件で駅周辺を検索します。『探す』を押すと上に結果を表示します。");
   });
 }
 
