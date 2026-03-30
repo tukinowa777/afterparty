@@ -361,23 +361,32 @@ def reverseGeocodeLocation(latitude, longitude):
         payload = json.loads(response.read().decode("utf-8"))
 
     address = payload.get("address", {})
-    areaParts = [
-        address.get("suburb"),
-        address.get("quarter"),
-        address.get("neighbourhood"),
-        address.get("city_district"),
-        address.get("city"),
-        address.get("town"),
-        address.get("village"),
-    ]
+    detailedParts = []
 
-    for areaPart in areaParts:
-        if areaPart:
-            return areaPart
+    if address.get("road"):
+        detailedParts.append(address["road"])
+    if address.get("house_number"):
+        detailedParts.append(address["house_number"])
+
+    areaPart = (
+        address.get("neighbourhood")
+        or address.get("quarter")
+        or address.get("suburb")
+        or address.get("city_district")
+        or address.get("city")
+        or address.get("town")
+        or address.get("village")
+    )
+    if areaPart:
+        detailedParts.append(areaPart)
+
+    if detailedParts:
+        return " / ".join(detailedParts)
 
     displayName = payload.get("display_name")
     if displayName:
-        return displayName.split(",")[0].strip()
+        displayParts = [part.strip() for part in displayName.split(",") if part.strip()]
+        return " / ".join(displayParts[:2])
 
     raise ValueError("reverse geocoding failed")
 
