@@ -10,7 +10,7 @@ from functools import partial
 from math import atan2, cos, sin, sqrt
 from pathlib import Path
 from urllib.error import HTTPError, URLError
-from urllib.parse import parse_qs, quote, urlencode, urlparse
+from urllib.parse import parse_qs, quote, urlencode, urlparse, unquote_plus
 from urllib.request import Request, urlopen
 
 
@@ -54,8 +54,6 @@ class AppRequestHandler(http.server.SimpleHTTPRequestHandler):
 
     def serveVenues(self, queryString):
         filters = parseFilters(queryString)
-        fallbackPayload = loadSampleVenues(filters)
-
         try:
             hotpepperVenues, resolvedFilters = fetchHotpepperVenues(filters)
             responsePayload = {
@@ -81,12 +79,26 @@ class AppRequestHandler(http.server.SimpleHTTPRequestHandler):
                 self.send_error(500, "venues data is invalid")
                 return
             except (HTTPError, URLError, TimeoutError, ValueError):
-                responsePayload = {
-                    **fallbackPayload,
-                    "source": "sample",
-                    "sourceLabel": "内蔵サンプルデータ",
-                    "attribution": "",
-                }
+                try:
+                    fallbackPayload = loadSampleVenues(filters)
+                    responsePayload = {
+                        **fallbackPayload,
+                        "source": "sample",
+                        "sourceLabel": "内蔵サンプルデータ",
+                        "attribution": "",
+                    }
+                except (FileNotFoundError, json.JSONDecodeError):
+                    self.send_error(500, "venues data is invalid")
+                    return
+                except ValueError:
+                    responsePayload = {
+                        "venues": [],
+                        "count": 0,
+                        "filters": filters,
+                        "source": "empty",
+                        "sourceLabel": "検索結果なし",
+                        "attribution": "",
+                    }
 
         responseBody = json.dumps(responsePayload, ensure_ascii=False).encode("utf-8")
 
@@ -141,11 +153,11 @@ def parseFilters(queryString):
     return {
         "searchMode": params.get("searchMode", ["gps"])[0],
         "line": params.get("line", [""])[0],
-        "station": params.get("station", [""])[0],
+        "station": unquote_plus(params.get("station", [""])[0]),
         "partySize": parseInt(params.get("partySize", ["4"])[0], 4),
         "maxBudget": "mid",
         "cuisine": params.get("cuisine", ["any"])[0],
-        "maxDistanceMeters": parseInt(params.get("distance", ["100"])[0], 100),
+        "maxDistanceMeters": parseInt(params.get("distance", ["500"])[0], 500),
         "requireOpenAfter21": params.get("openAfter21", ["true"])[0] != "false",
         "latitude": parseFloat(params.get("latitude", ["35.6895"])[0], 35.6895),
         "longitude": parseFloat(params.get("longitude", ["139.6917"])[0], 139.6917),
