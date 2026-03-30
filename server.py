@@ -277,12 +277,18 @@ def filterVenues(venues, filters):
     rankedVenues = []
 
     for venue in venues:
-        distanceMeters = getDistanceMeters(
-            filters["latitude"],
-            filters["longitude"],
-            venue["latitude"],
-            venue["longitude"],
-        )
+        distanceMeters = 0
+        if filters["searchMode"] != "station":
+            distanceMeters = getDistanceMeters(
+                filters["latitude"],
+                filters["longitude"],
+                venue["latitude"],
+                venue["longitude"],
+            )
+        elif venue.get("distanceMeters") is not None:
+            distanceMeters = float(venue["distanceMeters"])
+        elif venue.get("stationWalkMinutes") is not None:
+            distanceMeters = float(venue["stationWalkMinutes"] * 80)
 
         if filters["searchMode"] != "station" and distanceMeters > filters["maxDistanceMeters"]:
             continue
@@ -406,6 +412,9 @@ def fetchHotpepperVenues(filters):
     if not HOTPEPPER_API_KEY:
         raise ValueError("hotpepper api key is missing")
 
+    if filters["searchMode"] == "station" and filters["station"]:
+        return fetchHotpepperStationVenues(filters)
+
     resolvedFilters = resolveSearchOrigin(filters)
     filteredVenues = loadHotpepperCandidates(
         resolvedFilters,
@@ -433,6 +442,75 @@ def fetchHotpepperVenues(filters):
         )
     )
     return filteredVenues, resolvedFilters
+
+
+def fetchHotpepperStationVenues(filters):
+    stationFilters = {
+        **filters,
+        "latitude": 0,
+        "longitude": 0,
+    }
+    stationCandidates = loadHotpepperStationCandidates(
+        stationFilters,
+        filters["maxBudget"],
+        True,
+    )
+    if not stationCandidates:
+        stationCandidates = loadHotpepperStationCandidates(
+            stationFilters,
+            filters["maxBudget"],
+            False,
+        )
+
+    stationCandidates.sort(
+        key=lambda venue: (
+            venue["walkMinutes"],
+            -buildGenrePriorityScore(venue),
+            -venue["openUntilHour"],
+            venue["name"],
+        )
+    )
+    return stationCandidates, stationFilters
+
+
+def loadHotpepperStationCandidates(filters, maxBudget, includeBudget):
+    requestParams = [
+        ("key", HOTPEPPER_API_KEY),
+        ("format", "json"),
+        ("keyword", filters["station"]),
+        ("service_area", "SA11"),
+        ("genre", "G001"),
+        ("genre", "G012"),
+        ("genre", "G014"),
+        ("count", "100"),
+        ("order", "4"),
+    ]
+
+    if includeBudget:
+        for budgetCode in mapHotpepperBudgetCodes(maxBudget):
+            requestParams.append(("budget", budgetCode))
+
+    request = Request(
+        f"{HOTPEPPER_GOURMET_API_URL}?{urlencode(requestParams)}",
+        headers={
+            "User-Agent": APP_USER_AGENT,
+            "Accept": "application/json",
+        },
+    )
+
+    with urlopen(request, timeout=12) as response:
+        payload = json.loads(response.read().decode("utf-8"))
+
+    shops = payload.get("results", {}).get("shop", [])
+    normalizedVenues = []
+    for shop in shops:
+        normalizedVenue = normalizeHotpepperVenue(shop)
+        if normalizedVenue is None:
+            continue
+        normalizedVenues.append(normalizedVenue)
+
+    normalizedVenues = applyHotpepperStationGuides(normalizedVenues, filters["station"])
+    return filterVenues(normalizedVenues, filters)
 
 
 def loadHotpepperCandidates(resolvedFilters, maxBudget, rangeCode, count, includeBudget):

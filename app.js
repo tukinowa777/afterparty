@@ -123,14 +123,7 @@ const fallbackVenues = [
 ];
 
 const state = {
-  location: {
-    latitude: 35.6895,
-    longitude: 139.6917,
-    label: "現在地",
-    detail: "緯度 35.68950 / 経度 139.69170",
-    accuracy: null,
-  },
-  searchMode: "gps",
+  searchMode: "station",
   lines: {},
   selectedLine: "ginza",
   selectedStation: "",
@@ -141,11 +134,6 @@ const state = {
   currentPage: 0,
 };
 
-const locationLabel = document.getElementById("locationLabel");
-const locationDetail = document.getElementById("locationDetail");
-const locationNote = document.getElementById("locationNote");
-const locateButton = document.getElementById("locateButton");
-const searchButton = document.getElementById("searchButton");
 const searchButtonBottom = document.getElementById("searchButtonBottom");
 const lineSelect = document.getElementById("lineSelect");
 const stationSelect = document.getElementById("stationSelect");
@@ -213,17 +201,12 @@ function setSourceNote(message) {
 
 function setLoadingState(isLoading) {
   loadingIndicator.hidden = !isLoading;
-  searchButton.disabled = isLoading;
   searchButtonBottom.disabled = isLoading;
-}
-
-function hasReliableLocation() {
-  return state.searchMode !== "gps" || !Number.isFinite(state.location.accuracy) || state.location.accuracy <= 300;
 }
 
 function getFilters() {
   return {
-    searchMode: state.searchMode,
+    searchMode: "station",
     line: state.selectedLine,
     station: state.selectedStation,
     maxBudget: "mid",
@@ -241,8 +224,6 @@ function buildSearchParams() {
   params.set("station", filters.station);
   params.set("cuisine", filters.cuisine);
   params.set("openAfter21", String(filters.requireOpenAfter21));
-  params.set("latitude", String(state.location.latitude));
-  params.set("longitude", String(state.location.longitude));
 
   return params;
 }
@@ -254,7 +235,7 @@ function renderEmpty() {
   resultsList.innerHTML = `
     <article class="empty">
       <h3>条件に合う店がありません</h3>
-      <p>指定駅から徒歩10分以内とホットペッパーで確認できる店が見つかりませんでした。料理ジャンルを変えると候補が見つかりやすくなります。</p>
+      <p>指定駅から徒歩10分以内とホットペッパーで確認できる店が見つかりませんでした。路線や駅、料理ジャンルを変えると候補が見つかりやすくなります。</p>
     </article>
   `;
 }
@@ -266,7 +247,7 @@ function renderRecommendations() {
   }
 
   resultsHeader.hidden = false;
-  const searchOriginLabel = state.searchMode === "gps" ? "現在地" : `${state.location.label}`;
+  const searchOriginLabel = `${state.selectedStation}駅`;
   const pageSize = 3;
   const pageCount = Math.ceil(state.venues.length / pageSize);
   resultsPager.hidden = pageCount <= 1;
@@ -314,44 +295,8 @@ function renderRecommendations() {
   nextResultsButton.disabled = pageCount <= 1;
 }
 
-function setLocationNote(message) {
-  locationLabel.textContent = state.location.label;
-  locationDetail.textContent = state.location.detail;
-  locationNote.textContent = message;
-  locationNote.classList.toggle("warning", !hasReliableLocation());
-}
-
 function updateSearchModeUi() {
   stationFields.hidden = false;
-}
-
-async function fetchLocationLabel(latitude, longitude) {
-  const queryString = new URLSearchParams({
-    latitude: String(latitude),
-    longitude: String(longitude),
-  }).toString();
-  const response = await fetch(`./api/location-label?${queryString}`, {
-    headers: {
-      Accept: "application/json",
-    },
-  });
-
-  if (!response.ok) {
-    throw new Error(`Failed to load location label: ${response.status}`);
-  }
-
-  const payload = await response.json();
-  if (payload.label) {
-    return;
-  }
-}
-
-function formatLocationDetail(latitude, longitude, accuracy) {
-  const detailParts = [`緯度 ${latitude.toFixed(5)}`, `経度 ${longitude.toFixed(5)}`];
-  if (Number.isFinite(accuracy)) {
-    detailParts.push(`精度 約${Math.round(accuracy)}m`);
-  }
-  return detailParts.join(" / ");
 }
 
 function renderLineOptions() {
@@ -386,20 +331,10 @@ function bindSearchMode() {
   lineSelect.addEventListener("change", () => {
     state.selectedLine = lineSelect.value;
     renderStationOptions();
-    state.searchMode = "station";
-    state.location.label = `${state.selectedStation}駅周辺`;
-    state.location.detail = "駅を検索起点にしています";
-    state.location.accuracy = null;
-    setLocationNote("下の条件で駅周辺を検索します。『探す』を押すと上に結果を表示します。");
   });
 
   stationSelect.addEventListener("change", () => {
     state.selectedStation = stationSelect.value;
-    state.searchMode = "station";
-    state.location.label = `${state.selectedStation}駅周辺`;
-    state.location.detail = "駅を検索起点にしています";
-    state.location.accuracy = null;
-    setLocationNote("下の条件で駅周辺を検索します。『探す』を押すと上に結果を表示します。");
   });
 }
 
@@ -407,87 +342,12 @@ function bindForm() {
   return;
 }
 
-function bindGeolocation() {
-  locateButton.addEventListener("click", () => {
-    requestCurrentLocation(false);
-  });
-}
-
-function requestCurrentLocation(isAutomatic) {
-  if (!navigator.geolocation) {
-    setLocationNote("このブラウザは位置情報に対応していません。駅を選んで周辺の店を探してください。");
-    return;
-  }
-
-  locateButton.disabled = true;
-  locateButton.textContent = "取得中...";
-
-  navigator.geolocation.getCurrentPosition(
-    async (position) => {
-      state.location = {
-        latitude: position.coords.latitude,
-        longitude: position.coords.longitude,
-        label: "現在地",
-        detail: formatLocationDetail(
-          position.coords.latitude,
-          position.coords.longitude,
-          position.coords.accuracy
-        ),
-        accuracy: position.coords.accuracy,
-      };
-      state.searchMode = "gps";
-      try {
-        await fetchLocationLabel(position.coords.latitude, position.coords.longitude);
-      } catch (error) {
-        state.location.label = "現在地";
-      }
-      const reliabilityMessage =
-        Number.isFinite(position.coords.accuracy) && position.coords.accuracy > 300
-          ? "現在地の精度が低いため、この位置では店検索をおすすめできません。屋外で再取得するか、駅から探してください。"
-          : Number.isFinite(position.coords.accuracy) && position.coords.accuracy > 100
-            ? "現在地の精度がやや低いです。検索前に座標と精度を確認してください。"
-            : "現在地を取得しました。上の座標を検索起点にしています。『探す』を押すとおすすめを表示します。";
-      setLocationNote(
-        isAutomatic
-          ? reliabilityMessage.replace("『探す』", "「探す」")
-          : reliabilityMessage
-      );
-      locateButton.disabled = false;
-      locateButton.textContent = "現在地を使う";
-      updateSearchModeUi();
-    },
-    () => {
-      setLocationNote(
-        "位置情報を取得できませんでした。ブラウザ権限を確認するか、下の『駅から探す』を使ってください。"
-      );
-      locateButton.disabled = false;
-      locateButton.textContent = "現在地を使う";
-    },
-    {
-      enableHighAccuracy: true,
-      timeout: 15000,
-      maximumAge: 0,
-    }
-  );
-}
-
-async function autoRequestCurrentLocation() {
-  return Promise.resolve();
-}
-
 function applyFiltersFromUrl() {
   const params = new URLSearchParams(window.location.search);
-  const searchMode = params.get("searchMode");
   const line = params.get("line");
   const station = params.get("station");
   const cuisine = params.get("cuisine");
   const openAfter21 = params.get("openAfter21");
-  const latitude = Number.parseFloat(params.get("latitude"));
-  const longitude = Number.parseFloat(params.get("longitude"));
-
-  if (searchMode === "gps" || searchMode === "station") {
-    state.searchMode = searchMode;
-  }
 
   if (line) {
     state.selectedLine = line;
@@ -505,37 +365,13 @@ function applyFiltersFromUrl() {
     openAfter21Checkbox.checked = openAfter21 === "true";
   }
 
-  if (Number.isFinite(latitude) && Number.isFinite(longitude)) {
-    state.location.latitude = latitude;
-    state.location.longitude = longitude;
-    state.location.label = state.searchMode === "station" ? `${state.selectedStation}駅周辺` : "共有された位置";
-    state.location.detail = formatLocationDetail(latitude, longitude, null);
-    state.location.accuracy = null;
-    setLocationNote(
-      state.searchMode === "station"
-        ? "共有URLで指定された駅を検索の起点にしています。"
-        : "共有URLの位置情報を検索の起点にしています。"
-    );
-  }
-
   updateSearchModeUi();
 }
 
 function bindSearchButton() {
-  [searchButton, searchButtonBottom].forEach((button) => {
-    button.addEventListener("click", () => {
-      if (button === searchButtonBottom) {
-        state.searchMode = "station";
-        state.location.label = `${state.selectedStation}駅周辺`;
-        state.location.detail = "下の条件で駅を検索起点にしています";
-        state.location.accuracy = null;
-        setLocationNote("下の条件を優先して駅周辺を検索しています。結果は上に表示します。");
-      } else if (!hasReliableLocation()) {
-        setLocationNote("現在地の精度が低いため検索できません。屋外で再取得するか、駅から探してください。");
-        return;
-      }
-      loadVenues();
-    });
+  searchButtonBottom.addEventListener("click", () => {
+    state.searchMode = "station";
+    loadVenues();
   });
 }
 
@@ -628,7 +464,6 @@ async function loadVenues() {
 }
 
 bindForm();
-bindGeolocation();
 bindSearchMode();
 bindSearchButton();
 bindResultsPager();
@@ -655,20 +490,13 @@ async function bootstrap() {
   try {
     await loadStations();
   } catch (error) {
-    setStatusMessage("駅一覧の読み込みに失敗しました。現在地検索のみ利用できます。");
+    setStatusMessage("駅一覧の読み込みに失敗しました。時間をおいて再度お試しください。");
   }
 
   applyFiltersFromUrl();
   renderLineOptions();
   renderStationOptions();
   updateSearchModeUi();
-  if (state.searchMode === "station" && state.selectedStation) {
-    state.location.label = `${state.selectedStation}駅周辺`;
-    state.location.detail = "駅を検索起点にしています";
-    state.location.accuracy = null;
-    setLocationNote("選択した駅を検索の起点にしています。『探す』を押すとおすすめを表示します。");
-  }
-  await autoRequestCurrentLocation();
 }
 
 bootstrap();

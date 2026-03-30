@@ -14,51 +14,9 @@
       <section class="hero">
         <p class="eyebrow">After Party Finder</p>
         <h1>二次会探すくん</h1>
-        <h2 class="hero-subtitle">夜9時以降に入れる二次会向け居酒屋を、現在地から3件提案</h2>
+        <h2 class="hero-subtitle">夜9時以降に入れる二次会向け居酒屋を、駅から3件ずつ提案</h2>
 
-        <div class="location-card">
-          <div>
-            <p class="location-label">検索の起点</p>
-            <p class="location-value" id="locationLabel">現在地</p>
-            <p class="location-detail" id="locationDetail">緯度 35.68950 / 経度 139.69170</p>
-            <p class="location-note" id="locationNote">現在地を取得してから「探す」を押すとおすすめを表示します。</p>
-          </div>
-          <button id="locateButton" class="locate-button" type="button">現在地を使う</button>
-        </div>
-
-        <div class="hero-actions">
-          <button id="searchButton" class="search-button" type="button">探す</button>
-        </div>
-
-        <section class="results results-in-hero">
-          <div id="resultsHeader" class="results-header" hidden>
-            <h2>おすすめ3件</h2>
-            <p id="resultsMeta">3件ヒット</p>
-          </div>
-          <div id="resultsPager" class="results-pager" hidden>
-            <button id="prevResultsButton" class="pager-button" type="button">前の3件</button>
-            <button id="nextResultsButton" class="pager-button" type="button">次の3件</button>
-          </div>
-          <div id="loadingIndicator" class="loading-indicator" hidden aria-live="polite">
-            <span class="loading-dot"></span>
-            <span class="loading-dot"></span>
-            <span class="loading-dot"></span>
-            <span class="loading-text">検索中</span>
-          </div>
-          <p id="statusMessage" class="status-message" hidden></p>
-          <p id="sourceNote" class="source-note" hidden></p>
-          <div id="resultsList" class="results-list"></div>
-        </section>
-
-        <div class="mobile-guide">
-          <p class="mobile-guide-title">スマホで使うときのポイント</p>
-          <p class="mobile-guide-text">
-            iPhone / Android では、位置情報を許可すると現在地検索が使えます。許可しない場合でも、駅を選んで周辺の店を探せます。
-          </p>
-        </div>
-      </section>
-
-      <section class="filters">
+      <section class="filters filters-in-hero">
         <div class="filters-header">
           <h2>条件を設定</h2>
         </div>
@@ -99,6 +57,27 @@
         <div class="filters-actions">
           <button id="searchButtonBottom" class="search-button" type="button">探す</button>
         </div>
+      </section>
+
+        <section class="results results-in-hero">
+          <div id="resultsHeader" class="results-header" hidden>
+            <h2>おすすめ3件</h2>
+            <p id="resultsMeta">3件ヒット</p>
+          </div>
+          <div id="resultsPager" class="results-pager" hidden>
+            <button id="prevResultsButton" class="pager-button" type="button">前の3件</button>
+            <button id="nextResultsButton" class="pager-button" type="button">次の3件</button>
+          </div>
+          <div id="loadingIndicator" class="loading-indicator" hidden aria-live="polite">
+            <span class="loading-dot"></span>
+            <span class="loading-dot"></span>
+            <span class="loading-dot"></span>
+            <span class="loading-text">検索中</span>
+          </div>
+          <p id="statusMessage" class="status-message" hidden></p>
+          <p id="sourceNote" class="source-note" hidden></p>
+          <div id="resultsList" class="results-list"></div>
+        </section>
       </section>
 
     </main>
