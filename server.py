@@ -59,7 +59,7 @@ class AppRequestHandler(http.server.SimpleHTTPRequestHandler):
         try:
             hotpepperVenues, resolvedFilters = fetchHotpepperVenues(filters)
             responsePayload = {
-                "venues": hotpepperVenues[:3],
+                "venues": hotpepperVenues[:12],
                 "count": len(hotpepperVenues),
                 "filters": resolvedFilters,
                 "source": "hotpepper",
@@ -70,7 +70,7 @@ class AppRequestHandler(http.server.SimpleHTTPRequestHandler):
             try:
                 liveVenues, resolvedFilters = fetchLiveVenues(filters)
                 responsePayload = {
-                    "venues": liveVenues[:3],
+                    "venues": liveVenues[:12],
                     "count": len(liveVenues),
                     "filters": resolvedFilters,
                     "source": "live",
@@ -262,7 +262,7 @@ def loadSampleVenues(filters):
     venues = json.loads(payload)
     filteredVenues = filterVenues(venues, resolvedFilters)
     return {
-        "venues": filteredVenues[:3],
+        "venues": filteredVenues[:12],
         "count": len(filteredVenues),
         "filters": resolvedFilters,
     }
@@ -517,8 +517,6 @@ def normalizeHotpepperVenue(shop):
     genreNames = [shop.get("genre", {}).get("name", ""), shop.get("sub_genre", {}).get("name", "")]
     joinedGenres = " ".join(genreNames)
     if any(keyword in joinedGenres for keyword in ["フレンチ", "イタリアン", "ビストロ", "スペイン", "各国料理", "カフェ", "カレー", "ラーメン", "定食", "喫茶"]):
-        return None
-    if not any(keyword in joinedGenres for keyword in ["居酒屋", "ダイニング", "焼鳥", "焼き鳥", "バー", "バル", "酒場", "海鮮", "和食", "韓国料理", "焼肉"]):
         return None
     cuisineKeys = normalizeHotpepperCuisines(genreNames)
     openInfo = normalizeHotpepperOpenInfo(shop.get("open", ""), shop.get("midnight", ""))

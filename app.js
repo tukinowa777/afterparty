@@ -138,6 +138,7 @@ const state = {
   venueSource: "loading",
   lastQueryString: "",
   autoLocateAttempted: false,
+  currentPage: 0,
 };
 
 const locationLabel = document.getElementById("locationLabel");
@@ -153,8 +154,11 @@ const cuisineSelect = document.getElementById("cuisine");
 const distanceSelect = document.getElementById("distance");
 const openAfter21Checkbox = document.getElementById("openAfter21");
 const resultsHeader = document.getElementById("resultsHeader");
+const resultsPager = document.getElementById("resultsPager");
 const resultsMeta = document.getElementById("resultsMeta");
 const resultsList = document.getElementById("resultsList");
+const prevResultsButton = document.getElementById("prevResultsButton");
+const nextResultsButton = document.getElementById("nextResultsButton");
 const loadingIndicator = document.getElementById("loadingIndicator");
 const stationFields = document.getElementById("stationFields");
 const statusMessage = document.getElementById("statusMessage");
@@ -255,6 +259,7 @@ function renderEmpty() {
   const distanceMeters = Number.parseInt(distanceSelect.value, 10);
   const distanceLabel = Number.isFinite(distanceMeters) ? `${distanceMeters}m` : "現在の距離条件";
   resultsHeader.hidden = false;
+  resultsPager.hidden = true;
   resultsMeta.textContent = "0件ヒット";
   resultsList.innerHTML = `
     <article class="empty">
@@ -272,13 +277,19 @@ function renderRecommendations() {
 
   resultsHeader.hidden = false;
   const searchOriginLabel = state.searchMode === "gps" ? "現在地" : `${state.location.label}`;
-  resultsMeta.textContent = `${state.venues.length}件表示`;
-  resultsList.innerHTML = state.venues
+  const pageSize = 3;
+  const startIndex = state.currentPage * pageSize;
+  const visibleVenues = state.venues.slice(startIndex, startIndex + pageSize);
+  resultsPager.hidden = state.venues.length <= pageSize;
+  prevResultsButton.disabled = state.currentPage === 0;
+  nextResultsButton.disabled = startIndex + pageSize >= state.venues.length;
+  resultsMeta.textContent = `${startIndex + 1}-${Math.min(startIndex + visibleVenues.length, state.venues.length)}件 / 全${state.venues.length}件`;
+  resultsList.innerHTML = visibleVenues
     .map(
       (venue, index) => `
       <article class="result-card">
         <div class="result-top">
-          <div class="rank">${index + 1}</div>
+          <div class="rank">${startIndex + index + 1}</div>
           <div class="result-headline">
             <h3>${venue.name}</h3>
             <p class="station">${searchOriginLabel}から徒歩${venue.walkMinutes}分</p>
@@ -541,6 +552,25 @@ function bindSearchButton() {
   });
 }
 
+function bindResultsPager() {
+  prevResultsButton.addEventListener("click", () => {
+    if (state.currentPage === 0) {
+      return;
+    }
+    state.currentPage -= 1;
+    renderRecommendations();
+  });
+
+  nextResultsButton.addEventListener("click", () => {
+    const nextStart = (state.currentPage + 1) * 3;
+    if (nextStart >= state.venues.length) {
+      return;
+    }
+    state.currentPage += 1;
+    renderRecommendations();
+  });
+}
+
 async function loadVenues() {
   const queryString = buildSearchParams().toString();
   state.lastQueryString = queryString;
@@ -564,6 +594,7 @@ async function loadVenues() {
     }
 
     state.venues = Array.isArray(payload.venues) ? payload.venues : [];
+    state.currentPage = 0;
     state.venueSource = "api";
     history.replaceState(null, "", `?${queryString}`);
     setStatusMessage(`条件に合う店舗が${payload.count ?? state.venues.length}件見つかりました。`);
@@ -578,8 +609,9 @@ async function loadVenues() {
     }
 
     state.venueSource = "fallback";
-    state.venues = fallbackVenues;
-    setStatusMessage("APIの取得に失敗したため、内蔵サンプルデータで表示しています。");
+    state.venues = fallbackVenues.slice(0, 3);
+    state.currentPage = 0;
+    setStatusMessage("APIの取得に失敗したため、内蔵サンプルデータを3件表示しています。");
     setSourceNote("内蔵サンプルデータを表示しています。");
   }
 
@@ -596,6 +628,7 @@ bindForm();
 bindGeolocation();
 bindSearchMode();
 bindSearchButton();
+bindResultsPager();
 
 async function loadStations() {
   const response = await fetch("./api/stations", {

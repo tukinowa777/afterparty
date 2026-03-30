@@ -299,6 +299,33 @@ select {
   gap: 14px;
 }
 
+.results-pager {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin: 0 0 14px;
+}
+
+.results-pager[hidden] {
+  display: none !important;
+}
+
+.pager-button {
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+  min-height: 40px;
+  padding: 0 14px;
+  border-radius: 999px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.pager-button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
 .loading-indicator {
   display: inline-flex;
   align-items: center;
@@ -477,6 +504,7 @@ select {
   .location-card,
   .toggle,
   .results-header,
+  .results-pager,
   .result-top,
   .filters-header {
     flex-direction: column;
