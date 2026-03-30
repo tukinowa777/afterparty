@@ -197,10 +197,12 @@ def filterVenues(venues, filters):
         if filters["requireOpenAfter21"] and venue["openUntilHour"] < 21:
             continue
 
+        walkMinutes = max(1, round(distanceMeters / 80))
         rankedVenues.append(
             {
                 **venue,
                 "distanceMeters": distanceMeters,
+                "walkMinutes": walkMinutes,
                 "score": buildScore(venue, distanceMeters),
             }
         )
@@ -377,14 +379,12 @@ def normalizeOsmVenue(element, filters):
     priceRange = normalizePriceRange(tags)
     openUntilHour = normalizeOpenUntilHour(tags.get("opening_hours", ""))
     nearestStation = buildAreaLabel(tags)
-    walkMinutes = max(1, round(getDistanceMeters(filters["latitude"], filters["longitude"], latitude, longitude) / 80))
-
     normalizedVenue = {
         "id": f'osm-{element.get("type", "node")}-{element.get("id", "unknown")}',
         "name": venueName,
         "latitude": latitude,
         "longitude": longitude,
-        "walkMinutes": walkMinutes,
+        "walkMinutes": 0,
         "nearestStation": nearestStation,
         "openUntilHour": openUntilHour,
         "priceRange": priceRange,

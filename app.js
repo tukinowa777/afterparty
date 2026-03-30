@@ -143,6 +143,7 @@ const locationLabel = document.getElementById("locationLabel");
 const locationNote = document.getElementById("locationNote");
 const locateButton = document.getElementById("locateButton");
 const searchButton = document.getElementById("searchButton");
+const searchButtonBottom = document.getElementById("searchButtonBottom");
 const partySizeInput = document.getElementById("partySize");
 const lineSelect = document.getElementById("lineSelect");
 const stationSelect = document.getElementById("stationSelect");
@@ -501,8 +502,10 @@ function bindShareButton() {
 }
 
 function bindSearchButton() {
-  searchButton.addEventListener("click", () => {
-    loadVenues();
+  [searchButton, searchButtonBottom].forEach((button) => {
+    button.addEventListener("click", () => {
+      loadVenues();
+    });
   });
 }
 
