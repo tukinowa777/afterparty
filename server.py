@@ -223,7 +223,7 @@ def filterVenues(venues, filters):
         if distanceMeters > filters["maxDistanceMeters"]:
             continue
 
-        if venue["priceRange"] != "mid":
+        if not fitsBudget(venue["priceRange"], filters["maxBudget"]):
             continue
 
         if not (venue["minPartySize"] <= filters["partySize"] <= venue["maxPartySize"]):
