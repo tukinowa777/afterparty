@@ -303,7 +303,7 @@ def filterVenues(venues, filters):
         if filters["smoking"] == "non-smoking" and venue.get("smokingLabel") not in {"禁煙", "分煙"}:
             continue
 
-        if filters["smoking"] == "smoking" and venue.get("smokingLabel") != "喫煙可":
+        if filters["smoking"] == "smoking" and venue.get("smokingLabel") not in {"喫煙可", "分煙"}:
             continue
 
         if filters["requireOpenAfter21"] and venue["openUntilHour"] < 21:
