@@ -481,7 +481,7 @@ async function loadVenues() {
     state.currentPage = 0;
     state.venueSource = "api";
     history.replaceState(null, "", `?${queryString}`);
-    setStatusMessage(`条件に合う店舗が${payload.count ?? state.venues.length}件見つかりました。`);
+    setStatusMessage("条件に合う候補を表示しています。カテゴリごとに3件ずつ確認できます。");
     setSourceNote(
       payload.source === "live"
         ? `${payload.sourceLabel} を利用しています。${payload.attribution ?? ""}`.trim()
