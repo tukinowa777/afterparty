@@ -150,7 +150,6 @@ const searchButtonBottom = document.getElementById("searchButtonBottom");
 const lineSelect = document.getElementById("lineSelect");
 const stationSelect = document.getElementById("stationSelect");
 const cuisineSelect = document.getElementById("cuisine");
-const distanceSelect = document.getElementById("distance");
 const openAfter21Checkbox = document.getElementById("openAfter21");
 const resultsHeader = document.getElementById("resultsHeader");
 const resultsPager = document.getElementById("resultsPager");
@@ -229,7 +228,6 @@ function getFilters() {
     station: state.selectedStation,
     maxBudget: "mid",
     cuisine: cuisineSelect.value,
-    maxDistanceMeters: Number.parseInt(distanceSelect.value, 10),
     requireOpenAfter21: openAfter21Checkbox.checked,
   };
 }
@@ -242,7 +240,6 @@ function buildSearchParams() {
   params.set("line", filters.line);
   params.set("station", filters.station);
   params.set("cuisine", filters.cuisine);
-  params.set("distance", String(filters.maxDistanceMeters));
   params.set("openAfter21", String(filters.requireOpenAfter21));
   params.set("latitude", String(state.location.latitude));
   params.set("longitude", String(state.location.longitude));
@@ -251,15 +248,13 @@ function buildSearchParams() {
 }
 
 function renderEmpty() {
-  const distanceMeters = Number.parseInt(distanceSelect.value, 10);
-  const distanceLabel = Number.isFinite(distanceMeters) && distanceMeters === 800 ? "徒歩10分以内" : "現在の距離条件";
   resultsHeader.hidden = false;
   resultsPager.hidden = true;
   resultsMeta.textContent = "0件ヒット";
   resultsList.innerHTML = `
     <article class="empty">
       <h3>条件に合う店がありません</h3>
-      <p>${distanceLabel}で見つかりませんでした。料理ジャンルを変えると候補が見つかりやすくなります。</p>
+      <p>指定駅から徒歩10分以内とホットペッパーで確認できる店が見つかりませんでした。料理ジャンルを変えると候補が見つかりやすくなります。</p>
     </article>
   `;
 }
@@ -293,7 +288,6 @@ function renderRecommendations() {
         </div>
         <div class="meta">
           <span class="pill">徒歩${venue.walkMinutes}分</span>
-          <span class="pill">${Math.round(venue.distanceMeters)}m</span>
           <span class="pill">${formatBusinessHours(venue)}</span>
         </div>
         <p class="genres">${venue.cuisines.map((item) => cuisineLabels[item]).join(" / ")}</p>
@@ -478,7 +472,6 @@ function applyFiltersFromUrl() {
   const line = params.get("line");
   const station = params.get("station");
   const cuisine = params.get("cuisine");
-  const distance = params.get("distance");
   const openAfter21 = params.get("openAfter21");
   const latitude = Number.parseFloat(params.get("latitude"));
   const longitude = Number.parseFloat(params.get("longitude"));
@@ -497,10 +490,6 @@ function applyFiltersFromUrl() {
 
   if (cuisine && cuisineSelect.querySelector(`option[value="${cuisine}"]`)) {
     cuisineSelect.value = cuisine;
-  }
-
-  if (distance && distanceSelect.querySelector(`option[value="${distance}"]`)) {
-    distanceSelect.value = distance;
   }
 
   if (openAfter21 === "true" || openAfter21 === "false") {
