@@ -152,6 +152,7 @@ const distanceSelect = document.getElementById("distance");
 const openAfter21Checkbox = document.getElementById("openAfter21");
 const resultsMeta = document.getElementById("resultsMeta");
 const resultsList = document.getElementById("resultsList");
+const loadingIndicator = document.getElementById("loadingIndicator");
 const budgetGroup = document.getElementById("budgetGroup");
 const searchModeGroup = document.getElementById("searchModeGroup");
 const stationFields = document.getElementById("stationFields");
@@ -199,6 +200,12 @@ function setSourceNote(message) {
 
   sourceNote.hidden = false;
   sourceNote.textContent = message;
+}
+
+function setLoadingState(isLoading) {
+  loadingIndicator.hidden = !isLoading;
+  searchButton.disabled = isLoading;
+  searchButtonBottom.disabled = isLoading;
 }
 
 function getFilters() {
@@ -519,6 +526,7 @@ function bindSearchButton() {
 async function loadVenues() {
   const queryString = buildSearchParams().toString();
   state.lastQueryString = queryString;
+  setLoadingState(true);
   setStatusMessage("条件に合う店舗データを検索しています。");
 
   try {
@@ -558,6 +566,7 @@ async function loadVenues() {
   }
 
   renderRecommendations();
+  setLoadingState(false);
 }
 
 bindBudgetChips();

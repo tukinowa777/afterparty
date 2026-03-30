@@ -282,6 +282,35 @@ select {
   gap: 14px;
 }
 
+.loading-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 12px;
+  color: #f1c48a;
+  font-weight: 700;
+}
+
+.loading-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #f1c48a;
+  animation: loadingPulse 1s ease-in-out infinite;
+}
+
+.loading-dot:nth-child(2) {
+  animation-delay: 0.15s;
+}
+
+.loading-dot:nth-child(3) {
+  animation-delay: 0.3s;
+}
+
+.loading-text {
+  margin-left: 2px;
+}
+
 .status-message {
   margin: 0 0 12px;
   color: #d4dce6;
@@ -395,6 +424,20 @@ select {
   background: var(--panel);
   color: var(--text);
   padding: 24px;
+}
+
+@keyframes loadingPulse {
+  0%,
+  80%,
+  100% {
+    opacity: 0.35;
+    transform: scale(0.8);
+  }
+
+  40% {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 
 @media (max-width: 720px) {
