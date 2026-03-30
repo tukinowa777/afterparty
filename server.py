@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import argparse
 import http.server
+import html
 import json
 import os
 import re
@@ -27,6 +28,13 @@ APP_USER_AGENT = "afterparty-izakaya-finder/0.1"
 HOTPEPPER_API_KEY = os.environ.get("HOTPEPPER_API_KEY", "").strip()
 stationCoordinateCache = None
 stationLinesIndex = None
+hotpepperGuideCache = {}
+stationAccessAliases = {
+    "新宿": ["新宿", "新宿三丁目", "新宿西口", "西新宿", "南新宿", "代々木"],
+    "渋谷": ["渋谷", "神泉", "表参道"],
+    "飯田橋": ["飯田橋", "水道橋", "九段下", "神楽坂", "後楽園"],
+    "下北沢": ["下北沢", "東北沢", "池ノ上"],
+}
 
 
 class ReusableTcpServer(socketserver.TCPServer):
@@ -389,6 +397,9 @@ def fetchHotpepperVenues(filters):
             continue
         normalizedVenues.append(normalizedVenue)
 
+    if resolvedFilters["searchMode"] == "station":
+        normalizedVenues = applyHotpepperStationGuides(normalizedVenues, resolvedFilters["station"])
+
     filteredVenues = filterVenues(normalizedVenues, resolvedFilters)
     filteredVenues = enrichWalkingMetrics(filteredVenues, resolvedFilters)
     filteredVenues = limitStationWalkTime(filteredVenues, resolvedFilters)
@@ -589,8 +600,9 @@ def normalizeHotpepperVenue(shop):
         "latitude": latitude,
         "longitude": longitude,
         "walkMinutes": 0,
-        "stationWalkMinutes": extractStationWalkMinutes(shop.get("station_name", ""), shop.get("access", "")),
+        "stationWalkMinutes": None,
         "nearestStation": shop.get("station_name", "現在地周辺"),
+        "accessText": shop.get("access", ""),
         "openUntilHour": openInfo["closeHour"],
         "closeLabel": openInfo["closeLabel"],
         "lastOrderLabel": openInfo["lastOrderLabel"],
@@ -655,6 +667,19 @@ def enrichWalkingMetrics(venues, filters):
     return venues
 
 
+def applyHotpepperStationGuides(venues, targetStationName):
+    for venue in venues:
+        guideText = fetchHotpepperGuideText(venue["id"]) or venue.get("accessText", "")
+        venue["stationGuideText"] = guideText
+        venue["stationWalkMinutes"] = extractStationWalkMinutes(
+            targetStationName,
+            guideText,
+            venue.get("nearestStation", ""),
+        )
+
+    return venues
+
+
 def normalizeHotpepperCuisines(genreNames):
     joinedNames = " ".join(genreNames)
     cuisineKeys = []
@@ -673,20 +698,85 @@ def normalizeHotpepperCuisines(genreNames):
     return cuisineKeys
 
 
-def extractStationWalkMinutes(stationName, accessText):
+def extractStationWalkMinutes(stationName, accessText, listedStationName=""):
     if not accessText or accessText == "＿":
         return None
 
-    stationPattern = re.escape(stationName)
-    matched = re.search(rf"{stationPattern}駅[^。]*?徒歩(?:約)?(\d+)分", accessText)
-    if matched:
-        return int(matched.group(1))
+    candidateNames = buildStationAccessCandidates(stationName, listedStationName)
+    normalizedAccessText = normalizeAccessText(accessText)
 
-    genericMatch = re.search(r"徒歩(?:約)?(\d+)分", accessText)
-    if genericMatch and stationName and stationName in accessText:
+    for candidateName in candidateNames:
+        candidatePattern = re.escape(candidateName)
+        matched = re.search(rf"{candidatePattern}駅[^。]*?徒歩(?:約)?(\d+)分", normalizedAccessText)
+        if matched:
+            return int(matched.group(1))
+
+    for candidateName in candidateNames:
+        candidatePattern = re.escape(candidateName)
+        matched = re.search(rf"徒歩(?:約)?(\d+)分[^。]*?{candidatePattern}駅", normalizedAccessText)
+        if matched:
+            return int(matched.group(1))
+
+    genericMatch = re.search(r"徒歩(?:約)?(\d+)分", normalizedAccessText)
+    if genericMatch and any(candidateName in normalizedAccessText for candidateName in candidateNames):
         return int(genericMatch.group(1))
 
+    if any(candidateName in normalizedAccessText and "直通" in normalizedAccessText for candidateName in candidateNames):
+        return 1
+
+    if any(candidateName in normalizedAccessText and keyword in normalizedAccessText for candidateName in candidateNames for keyword in ["駅近", "駅ちか", "駅スグ", "駅すぐ", "すぐ", "目の前"]):
+        return 3
+
+    if "/" in normalizedAccessText or "・" in normalizedAccessText:
+        if any(candidateName in normalizedAccessText for candidateName in candidateNames):
+            return 10
+
     return None
+
+
+def buildStationAccessCandidates(stationName, listedStationName):
+    candidateNames = []
+    for name in [stationName, listedStationName]:
+        if name and name not in candidateNames:
+            candidateNames.append(name)
+
+    for aliasName in stationAccessAliases.get(stationName, []):
+        if aliasName not in candidateNames:
+            candidateNames.append(aliasName)
+
+    return candidateNames
+
+
+def normalizeAccessText(accessText):
+    return str(accessText).replace("　", " ").replace("／", "/")
+
+
+def fetchHotpepperGuideText(shopId):
+    if not shopId:
+        return ""
+
+    if shopId in hotpepperGuideCache:
+        return hotpepperGuideCache[shopId]
+
+    request = Request(
+        f"https://www.hotpepper.jp/str{shopId}/map/",
+        headers={
+            "User-Agent": APP_USER_AGENT,
+            "Accept": "text/html",
+        },
+    )
+
+    try:
+        with urlopen(request, timeout=12) as response:
+            htmlBody = response.read().decode("utf-8", errors="ignore")
+    except (HTTPError, URLError, TimeoutError, ValueError):
+        hotpepperGuideCache[shopId] = ""
+        return ""
+
+    matched = re.search(r"道案内</th><td>([^<]+)", htmlBody)
+    guideText = html.unescape(matched.group(1).strip()) if matched else ""
+    hotpepperGuideCache[shopId] = guideText
+    return guideText
 
 
 def normalizeHotpepperOpenInfo(openText, midnightText):
