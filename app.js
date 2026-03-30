@@ -144,6 +144,7 @@ const resultsMeta = document.getElementById("resultsMeta");
 const resultsList = document.getElementById("resultsList");
 const budgetGroup = document.getElementById("budgetGroup");
 const statusMessage = document.getElementById("statusMessage");
+const shareButton = document.getElementById("shareButton");
 
 function toRadians(value) {
   return (value * Math.PI) / 180;
@@ -187,6 +188,15 @@ function formatHour(hour) {
   if (hour === 24) return "24:00";
   if (hour > 24) return `${String(hour - 24).padStart(2, "0")}:00`;
   return `${String(hour).padStart(2, "0")}:00`;
+}
+
+function buildMapLink(venue) {
+  const params = new URLSearchParams({
+    api: "1",
+    query: `${venue.name} ${venue.nearestStation}`,
+  });
+
+  return `https://www.google.com/maps/search/?${params.toString()}`;
 }
 
 function setStatusMessage(message) {
@@ -281,6 +291,12 @@ function renderRecommendations() {
         </div>
         <p class="genres">${venue.cuisines.map((item) => cuisineLabels[item]).join(" / ")}</p>
         <p class="features">${venue.features.join(" • ")}</p>
+        <div class="result-actions">
+          <a class="action-link primary" href="${buildMapLink(venue)}" target="_blank" rel="noreferrer">地図で開く</a>
+          <a class="action-link secondary" href="https://www.google.com/search?q=${encodeURIComponent(
+            `${venue.name} ${venue.nearestStation}`
+          )}" target="_blank" rel="noreferrer">店を調べる</a>
+        </div>
       </article>
     `
     )
@@ -349,6 +365,62 @@ function bindGeolocation() {
   });
 }
 
+function applyFiltersFromUrl() {
+  const params = new URLSearchParams(window.location.search);
+  const partySize = params.get("partySize");
+  const cuisine = params.get("cuisine");
+  const distance = params.get("distance");
+  const budget = params.get("budget");
+  const openAfter21 = params.get("openAfter21");
+
+  if (partySize) {
+    partySizeInput.value = partySize;
+  }
+
+  if (cuisine && cuisineSelect.querySelector(`option[value="${cuisine}"]`)) {
+    cuisineSelect.value = cuisine;
+  }
+
+  if (distance && distanceSelect.querySelector(`option[value="${distance}"]`)) {
+    distanceSelect.value = distance;
+  }
+
+  if (budget && budgetGroup.querySelector(`[data-budget="${budget}"]`)) {
+    state.budget = budget;
+    budgetGroup.querySelectorAll(".chip").forEach((node) => {
+      node.classList.toggle("active", node.dataset.budget === budget);
+    });
+  }
+
+  if (openAfter21 === "true" || openAfter21 === "false") {
+    openAfter21Checkbox.checked = openAfter21 === "true";
+  }
+}
+
+function bindShareButton() {
+  shareButton.addEventListener("click", async () => {
+    const filters = getFilters();
+    const url = new URL(window.location.href);
+
+    url.searchParams.set("partySize", String(filters.partySize));
+    url.searchParams.set("cuisine", filters.cuisine);
+    url.searchParams.set("distance", String(filters.maxDistanceMeters));
+    url.searchParams.set("budget", filters.maxBudget);
+    url.searchParams.set("openAfter21", String(filters.requireOpenAfter21));
+
+    try {
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(url.toString());
+        setStatusMessage("共有用URLをクリップボードにコピーしました。");
+      } else {
+        setStatusMessage(`共有用URL: ${url.toString()}`);
+      }
+    } catch (error) {
+      setStatusMessage(`共有用URL: ${url.toString()}`);
+    }
+  });
+}
+
 async function loadVenues() {
   setStatusMessage("店舗データを読み込んでいます。");
 
@@ -379,4 +451,6 @@ async function loadVenues() {
 bindBudgetChips();
 bindForm();
 bindGeolocation();
+bindShareButton();
+applyFiltersFromUrl();
 loadVenues();
