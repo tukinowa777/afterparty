@@ -127,6 +127,8 @@ const state = {
     latitude: 35.6895,
     longitude: 139.6917,
     label: "新宿駅周辺",
+    detail: "緯度 35.68950 / 経度 139.69170",
+    accuracy: null,
   },
   searchMode: "gps",
   lines: {},
@@ -140,6 +142,7 @@ const state = {
 };
 
 const locationLabel = document.getElementById("locationLabel");
+const locationDetail = document.getElementById("locationDetail");
 const locationNote = document.getElementById("locationNote");
 const locateButton = document.getElementById("locateButton");
 const searchButton = document.getElementById("searchButton");
@@ -257,7 +260,7 @@ function renderRecommendations() {
     return;
   }
 
-  const searchOriginLabel = state.searchMode === "gps" ? state.location.label : `${state.location.label}`;
+  const searchOriginLabel = state.searchMode === "gps" ? "現在地" : `${state.location.label}`;
   resultsMeta.textContent = `${state.venues.length}件表示`;
   resultsList.innerHTML = state.venues
     .map(
@@ -293,6 +296,7 @@ function renderRecommendations() {
 
 function setLocationNote(message) {
   locationLabel.textContent = state.location.label;
+  locationDetail.textContent = state.location.detail;
   locationNote.textContent = message;
 }
 
@@ -330,6 +334,14 @@ async function fetchLocationLabel(latitude, longitude) {
   }
 }
 
+function formatLocationDetail(latitude, longitude, accuracy) {
+  const detailParts = [`緯度 ${latitude.toFixed(5)}`, `経度 ${longitude.toFixed(5)}`];
+  if (Number.isFinite(accuracy)) {
+    detailParts.push(`精度 約${Math.round(accuracy)}m`);
+  }
+  return detailParts.join(" / ");
+}
+
 function renderLineOptions() {
   const entries = Object.entries(state.lines);
   lineSelect.innerHTML = entries
@@ -364,6 +376,7 @@ function bindSearchMode() {
       state.searchMode = chip.dataset.mode;
       if (state.searchMode === "station") {
         state.location.label = `${state.selectedStation || "駅"}周辺`;
+        state.location.detail = "駅を検索起点にしています";
         setLocationNote("選択した駅を検索の起点にしています。『探す』を押すとおすすめを表示します。");
       } else {
         setLocationNote("現在地を取得してから『探す』を押すとおすすめを表示します。");
@@ -376,12 +389,14 @@ function bindSearchMode() {
     state.selectedLine = lineSelect.value;
     renderStationOptions();
     state.location.label = `${state.selectedStation}駅周辺`;
+    state.location.detail = "駅を検索起点にしています";
     setLocationNote("選択した駅を検索の起点にしています。『探す』を押すとおすすめを表示します。");
   });
 
   stationSelect.addEventListener("change", () => {
     state.selectedStation = stationSelect.value;
     state.location.label = `${state.selectedStation}駅周辺`;
+    state.location.detail = "駅を検索起点にしています";
     setLocationNote("選択した駅を検索の起点にしています。『探す』を押すとおすすめを表示します。");
   });
 }
@@ -420,17 +435,23 @@ function requestCurrentLocation(isAutomatic) {
         latitude: position.coords.latitude,
         longitude: position.coords.longitude,
         label: "現在地",
+        detail: formatLocationDetail(
+          position.coords.latitude,
+          position.coords.longitude,
+          position.coords.accuracy
+        ),
+        accuracy: position.coords.accuracy,
       };
       state.searchMode = "gps";
       try {
         await fetchLocationLabel(position.coords.latitude, position.coords.longitude);
       } catch (error) {
-        state.location.label = `${position.coords.latitude.toFixed(5)}, ${position.coords.longitude.toFixed(5)}`;
+        state.location.label = "現在地";
       }
       setLocationNote(
         isAutomatic
-          ? "現在地の利用が許可されました。「探す」を押すとおすすめを表示します。"
-          : "現在地を取得しました。『探す』を押すとおすすめを表示します。"
+          ? "現在地の利用が許可されました。上の座標を検索起点にしています。「探す」を押すとおすすめを表示します。"
+          : "現在地を取得しました。上の座標を検索起点にしています。『探す』を押すとおすすめを表示します。"
       );
       locateButton.disabled = false;
       locateButton.textContent = "現在地を使う";
@@ -444,9 +465,9 @@ function requestCurrentLocation(isAutomatic) {
       locateButton.textContent = "現在地を使う";
     },
     {
-      enableHighAccuracy: false,
-      timeout: 10000,
-      maximumAge: 300000,
+      enableHighAccuracy: true,
+      timeout: 15000,
+      maximumAge: 0,
     }
   );
 }
@@ -504,6 +525,7 @@ function applyFiltersFromUrl() {
     state.location.latitude = latitude;
     state.location.longitude = longitude;
     state.location.label = state.searchMode === "station" ? `${state.selectedStation}駅周辺` : "共有された位置";
+    state.location.detail = formatLocationDetail(latitude, longitude, null);
     setLocationNote(
       state.searchMode === "station"
         ? "共有URLで指定された駅を検索の起点にしています。"
@@ -605,6 +627,7 @@ async function bootstrap() {
   updateSearchModeUi();
   if (state.searchMode === "station" && state.selectedStation) {
     state.location.label = `${state.selectedStation}駅周辺`;
+    state.location.detail = "駅を検索起点にしています";
     setLocationNote("選択した駅を検索の起点にしています。『探す』を押すとおすすめを表示します。");
   }
   await autoRequestCurrentLocation();

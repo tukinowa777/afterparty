@@ -101,6 +101,7 @@ h1 {
 }
 
 .location-label,
+.location-detail,
 .location-note {
   margin: 0;
 }
@@ -115,6 +116,13 @@ h1 {
   margin: 6px 0;
   font-size: 1.45rem;
   font-weight: 800;
+}
+
+.location-detail {
+  margin-bottom: 6px;
+  color: #4a5f77;
+  font-size: 0.9rem;
+  font-variant-numeric: tabular-nums;
 }
 
 .location-note {
