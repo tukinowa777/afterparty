@@ -166,6 +166,7 @@ def parseFilters(queryString):
         "partySize": parseInt(params.get("partySize", ["4"])[0], 4),
         "maxBudget": "mid",
         "cuisine": params.get("cuisine", ["any"])[0],
+        "smoking": params.get("smoking", ["any"])[0],
         "maxDistanceMeters": parseInt(params.get("distance", ["2000"])[0], 2000),
         "requireOpenAfter21": params.get("openAfter21", ["true"])[0] != "false",
         "latitude": parseFloat(params.get("latitude", ["35.6895"])[0], 35.6895),
@@ -297,6 +298,12 @@ def filterVenues(venues, filters):
             continue
 
         if filters["cuisine"] != "any" and filters["cuisine"] not in venue["cuisines"]:
+            continue
+
+        if filters["smoking"] == "non-smoking" and venue.get("smokingLabel") not in {"禁煙", "分煙"}:
+            continue
+
+        if filters["smoking"] == "smoking" and venue.get("smokingLabel") != "喫煙可":
             continue
 
         if filters["requireOpenAfter21"] and venue["openUntilHour"] < 21:

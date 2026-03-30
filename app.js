@@ -138,6 +138,7 @@ const searchButtonBottom = document.getElementById("searchButtonBottom");
 const lineSelect = document.getElementById("lineSelect");
 const stationSelect = document.getElementById("stationSelect");
 const cuisineSelect = document.getElementById("cuisine");
+const smokingSelect = document.getElementById("smoking");
 const openAfter21Checkbox = document.getElementById("openAfter21");
 const resultsHeader = document.getElementById("resultsHeader");
 const resultsPager = document.getElementById("resultsPager");
@@ -211,6 +212,7 @@ function getFilters() {
     station: state.selectedStation,
     maxBudget: "mid",
     cuisine: cuisineSelect.value,
+    smoking: smokingSelect.value,
     requireOpenAfter21: openAfter21Checkbox.checked,
   };
 }
@@ -223,6 +225,7 @@ function buildSearchParams() {
   params.set("line", filters.line);
   params.set("station", filters.station);
   params.set("cuisine", filters.cuisine);
+  params.set("smoking", filters.smoking);
   params.set("openAfter21", String(filters.requireOpenAfter21));
 
   return params;
@@ -390,6 +393,7 @@ function applyFiltersFromUrl() {
   const line = params.get("line");
   const station = params.get("station");
   const cuisine = params.get("cuisine");
+  const smoking = params.get("smoking");
   const openAfter21 = params.get("openAfter21");
 
   if (line) {
@@ -402,6 +406,10 @@ function applyFiltersFromUrl() {
 
   if (cuisine && cuisineSelect.querySelector(`option[value="${cuisine}"]`)) {
     cuisineSelect.value = cuisine;
+  }
+
+  if (smoking && smokingSelect.querySelector(`option[value="${smoking}"]`)) {
+    smokingSelect.value = smoking;
   }
 
   if (openAfter21 === "true" || openAfter21 === "false") {
