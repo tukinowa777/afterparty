@@ -224,7 +224,7 @@ select {
   display: flex;
   justify-content: flex-end;
   gap: 10px;
-  margin: 0 0 14px;
+  margin: 0 0 10px;
 }
 
 .results-pager[hidden] {
@@ -304,24 +304,25 @@ select {
 .result-card {
   background: var(--card);
   color: var(--text);
-  padding: 18px;
+  padding: 14px 15px;
 }
 
 .result-top {
   display: flex;
-  gap: 14px;
+  gap: 10px;
   align-items: center;
 }
 
 .rank {
-  width: 34px;
-  height: 34px;
+  width: 28px;
+  height: 28px;
   border-radius: 50%;
   display: grid;
   place-items: center;
   background: var(--accent);
   color: #fff;
   font-weight: 800;
+  font-size: 0.82rem;
 }
 
 .result-headline {
@@ -329,62 +330,72 @@ select {
 }
 
 .result-headline h3 {
-  margin: 0 0 4px;
-  font-size: 1.2rem;
+  margin: 0 0 2px;
+  font-size: 1rem;
+  line-height: 1.35;
 }
 
 .station {
   margin: 0;
   color: var(--subtle);
+  font-size: 0.85rem;
 }
 
 .price {
   font-weight: 800;
   color: #9a641f;
+  font-size: 0.92rem;
 }
 
 .meta {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
-  margin: 14px 0 10px;
+  gap: 6px;
+  margin: 10px 0 8px;
 }
 
 .pill {
   background: #edf2f7;
   border-radius: 999px;
-  padding: 7px 10px;
-  font-size: 0.86rem;
+  padding: 6px 9px;
+  font-size: 0.76rem;
   font-weight: 700;
 }
 
 .genres {
-  margin: 0 0 8px;
+  margin: 0 0 6px;
   font-weight: 700;
+  font-size: 0.88rem;
 }
 
 .features {
   margin: 0;
   color: var(--subtle);
-  line-height: 1.7;
+  line-height: 1.45;
+  font-size: 0.84rem;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 .result-actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
-  margin-top: 14px;
+  gap: 8px;
+  margin-top: 10px;
 }
 
 .action-link {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 44px;
-  padding: 0 14px;
+  min-height: 36px;
+  padding: 0 12px;
   border-radius: 999px;
   text-decoration: none;
   font-weight: 700;
+  font-size: 0.85rem;
 }
 
 .action-link.primary {
@@ -446,5 +457,13 @@ select {
 
   .hero-subtitle {
     max-width: 19rem;
+  }
+
+  .result-card {
+    padding: 12px 13px;
+  }
+
+  .results-page {
+    gap: 10px;
   }
 }

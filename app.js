@@ -251,7 +251,7 @@ function renderRecommendations() {
   const pageSize = 3;
   const pageCount = Math.ceil(state.venues.length / pageSize);
   resultsPager.hidden = pageCount <= 1;
-  resultsMeta.textContent = `全${state.venues.length}件`;
+  resultsMeta.textContent = buildResultsMetaText(0, pageSize);
   resultsList.innerHTML = Array.from({ length: pageCount }, (_, pageIndex) => {
     const startIndex = pageIndex * pageSize;
     const visibleVenues = state.venues.slice(startIndex, startIndex + pageSize);
@@ -275,7 +275,7 @@ function renderRecommendations() {
           <span class="pill">${venue.smokingLabel || "要確認"}</span>
         </div>
         <p class="genres">${venue.cuisines.map((item) => cuisineLabels[item]).join(" / ")}</p>
-        <p class="features">${venue.features.join(" • ")}</p>
+        <p class="features">${venue.features.slice(0, 2).join(" • ")}</p>
         <div class="result-actions">
           <a class="action-link primary" href="${buildMapLink(venue)}" target="_blank" rel="noreferrer">地図で開く</a>
           <a class="action-link secondary" href="${
@@ -293,6 +293,16 @@ function renderRecommendations() {
   resultsList.scrollTo({ left: 0, behavior: "auto" });
   prevResultsButton.disabled = true;
   nextResultsButton.disabled = pageCount <= 1;
+}
+
+function buildResultsMetaText(pageIndex, pageSize) {
+  if (state.venues.length === 0) {
+    return "0件ヒット";
+  }
+
+  const startIndex = pageIndex * pageSize + 1;
+  const endIndex = Math.min((pageIndex + 1) * pageSize, state.venues.length);
+  return `${startIndex}-${endIndex}件目 / 全${state.venues.length}件`;
 }
 
 function updateSearchModeUi() {
@@ -406,6 +416,8 @@ function updateResultsPagerState() {
   }
 
   const maxScrollLeft = Math.max(0, resultsList.scrollWidth - pageWidth);
+  const currentPage = Math.round(resultsList.scrollLeft / pageWidth);
+  resultsMeta.textContent = buildResultsMetaText(currentPage, 3);
   prevResultsButton.disabled = resultsList.scrollLeft < 20;
   nextResultsButton.disabled = resultsList.scrollLeft >= maxScrollLeft - 20;
 }
