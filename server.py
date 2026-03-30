@@ -143,7 +143,7 @@ def parseFilters(queryString):
         "line": params.get("line", [""])[0],
         "station": params.get("station", [""])[0],
         "partySize": parseInt(params.get("partySize", ["4"])[0], 4),
-        "maxBudget": params.get("budget", ["mid"])[0],
+        "maxBudget": "mid",
         "cuisine": params.get("cuisine", ["any"])[0],
         "maxDistanceMeters": parseInt(params.get("distance", ["100"])[0], 100),
         "requireOpenAfter21": params.get("openAfter21", ["true"])[0] != "false",

@@ -134,7 +134,6 @@ const state = {
   lines: {},
   selectedLine: "ginza",
   selectedStation: "",
-  budget: "mid",
   venues: [],
   venueSource: "loading",
   lastQueryString: "",
@@ -157,7 +156,6 @@ const resultsHeader = document.getElementById("resultsHeader");
 const resultsMeta = document.getElementById("resultsMeta");
 const resultsList = document.getElementById("resultsList");
 const loadingIndicator = document.getElementById("loadingIndicator");
-const budgetGroup = document.getElementById("budgetGroup");
 const stationFields = document.getElementById("stationFields");
 const statusMessage = document.getElementById("statusMessage");
 const sourceNote = document.getElementById("sourceNote");
@@ -229,7 +227,7 @@ function getFilters() {
     line: state.selectedLine,
     station: state.selectedStation,
     partySize: Number.isFinite(parsedPartySize) && parsedPartySize > 0 ? parsedPartySize : 4,
-    maxBudget: state.budget,
+    maxBudget: "mid",
     cuisine: cuisineSelect.value,
     maxDistanceMeters: Number.parseInt(distanceSelect.value, 10),
     requireOpenAfter21: openAfter21Checkbox.checked,
@@ -246,7 +244,6 @@ function buildSearchParams() {
   params.set("station", filters.station);
   params.set("cuisine", filters.cuisine);
   params.set("distance", String(filters.maxDistanceMeters));
-  params.set("budget", filters.maxBudget);
   params.set("openAfter21", String(filters.requireOpenAfter21));
   params.set("latitude", String(state.location.latitude));
   params.set("longitude", String(state.location.longitude));
@@ -318,12 +315,6 @@ function setLocationNote(message) {
 
 function updateSearchModeUi() {
   stationFields.hidden = false;
-}
-
-function updateBudgetUi() {
-  budgetGroup.querySelectorAll(".chip").forEach((node) => {
-    node.classList.toggle("active", node.dataset.budget === state.budget);
-  });
 }
 
 async function fetchLocationLabel(latitude, longitude) {
@@ -401,15 +392,6 @@ function bindSearchMode() {
     state.location.detail = "駅を検索起点にしています";
     state.location.accuracy = null;
     setLocationNote("下の条件で駅周辺を検索します。『探す』を押すと上に結果を表示します。");
-  });
-}
-
-function bindBudgetChips() {
-  budgetGroup.querySelectorAll(".chip").forEach((chip) => {
-    chip.addEventListener("click", () => {
-      state.budget = chip.dataset.budget;
-      updateBudgetUi();
-    });
   });
 }
 
@@ -493,7 +475,6 @@ function applyFiltersFromUrl() {
   const station = params.get("station");
   const cuisine = params.get("cuisine");
   const distance = params.get("distance");
-  const budget = params.get("budget");
   const openAfter21 = params.get("openAfter21");
   const latitude = Number.parseFloat(params.get("latitude"));
   const longitude = Number.parseFloat(params.get("longitude"));
@@ -522,10 +503,6 @@ function applyFiltersFromUrl() {
     distanceSelect.value = distance;
   }
 
-  if (budget && budgetGroup.querySelector(`[data-budget="${budget}"]`)) {
-    state.budget = budget;
-  }
-
   if (openAfter21 === "true" || openAfter21 === "false") {
     openAfter21Checkbox.checked = openAfter21 === "true";
   }
@@ -543,7 +520,6 @@ function applyFiltersFromUrl() {
     );
   }
 
-  updateBudgetUi();
   updateSearchModeUi();
 }
 
@@ -616,7 +592,6 @@ async function loadVenues() {
   }
 }
 
-bindBudgetChips();
 bindForm();
 bindGeolocation();
 bindSearchMode();
