@@ -29,6 +29,7 @@ HOTPEPPER_API_KEY = os.environ.get("HOTPEPPER_API_KEY", "").strip()
 stationCoordinateCache = None
 stationLinesIndex = None
 hotpepperGuideCache = {}
+hotpepperShopPageCache = {}
 stationAccessAliases = {
     "新宿": ["新宿", "新宿三丁目", "新宿西口", "西新宿", "南新宿", "代々木"],
     "渋谷": ["渋谷", "神泉", "表参道"],
@@ -872,6 +873,7 @@ def applyHotpepperStationGuides(venues, targetStationName):
     for venue in venues:
         guideText = fetchHotpepperGuideText(venue["id"]) or venue.get("accessText", "")
         venue["stationGuideText"] = guideText
+        venue["smokingLabel"] = fetchHotpepperSmokingLabel(venue["id"], venue.get("smokingLabel", "要確認"))
         venue["stationWalkMinutes"] = extractStationWalkMinutes(
             targetStationName,
             guideText,
@@ -996,14 +998,46 @@ def buildStationMentionPattern(candidateName):
 
 
 def fetchHotpepperGuideText(shopId):
+    htmlBody = fetchHotpepperShopPage(shopId)
+    if not htmlBody:
+        return ""
+
+    matched = re.search(r"道案内</th><td>(.*?)</td>", htmlBody, re.DOTALL)
+    guideText = normalizeHotpepperHtmlText(matched.group(1)) if matched else ""
+    hotpepperGuideCache[shopId] = guideText
+    return guideText
+
+
+def fetchHotpepperSmokingLabel(shopId, fallbackLabel):
+    htmlBody = fetchHotpepperShopPage(shopId)
+    if not htmlBody:
+        return fallbackLabel
+
+    smokingSection = re.search(
+        r"<h3>たばこ</h3>\s*<table summary=\"たばこ\" class=\"infoTable\">(.*?)</table>",
+        htmlBody,
+        re.DOTALL,
+    )
+    if not smokingSection:
+        return fallbackLabel
+
+    sectionBody = smokingSection.group(1)
+    smokingMatched = re.search(r"禁煙・喫煙</th>\s*<td>(.*?)</td>", sectionBody, re.DOTALL)
+    roomMatched = re.search(r"喫煙専用室</th>\s*<td>(.*?)</td>", sectionBody, re.DOTALL)
+    smokingText = normalizeHotpepperHtmlText(smokingMatched.group(1)) if smokingMatched else ""
+    roomText = normalizeHotpepperHtmlText(roomMatched.group(1)) if roomMatched else ""
+    return normalizeHotpepperSmokingLabel(f"{smokingText} {roomText}".strip()) if smokingText or roomText else fallbackLabel
+
+
+def fetchHotpepperShopPage(shopId):
     if not shopId:
         return ""
 
-    if shopId in hotpepperGuideCache:
-        return hotpepperGuideCache[shopId]
+    if shopId in hotpepperShopPageCache:
+        return hotpepperShopPageCache[shopId]
 
     request = Request(
-        f"https://www.hotpepper.jp/str{shopId}/map/",
+        f"https://www.hotpepper.jp/str{shopId}/",
         headers={
             "User-Agent": APP_USER_AGENT,
             "Accept": "text/html",
@@ -1014,13 +1048,18 @@ def fetchHotpepperGuideText(shopId):
         with urlopen(request, timeout=12) as response:
             htmlBody = response.read().decode("utf-8", errors="ignore")
     except (HTTPError, URLError, TimeoutError, ValueError):
-        hotpepperGuideCache[shopId] = ""
+        hotpepperShopPageCache[shopId] = ""
         return ""
 
-    matched = re.search(r"道案内</th><td>([^<]+)", htmlBody)
-    guideText = html.unescape(matched.group(1).strip()) if matched else ""
-    hotpepperGuideCache[shopId] = guideText
-    return guideText
+    hotpepperShopPageCache[shopId] = htmlBody
+    return htmlBody
+
+
+def normalizeHotpepperHtmlText(rawText):
+    normalizedText = re.sub(r"<[^>]+>", " ", rawText)
+    normalizedText = html.unescape(normalizedText)
+    normalizedText = re.sub(r"\s+", " ", normalizedText)
+    return normalizedText.strip()
 
 
 def normalizeHotpepperOpenInfo(openText, midnightText):
