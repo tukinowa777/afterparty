@@ -512,12 +512,6 @@ def normalizeHotpepperVenue(shop):
     except (KeyError, TypeError, ValueError):
         return None
 
-    excludedGenreCodes = {"G014", "G015", "G013", "G006", "G007", "G009", "G010", "G011", "G012"}
-    genreCode = shop.get("genre", {}).get("code", "")
-    subGenreCode = shop.get("sub_genre", {}).get("code", "")
-    if genreCode in excludedGenreCodes or subGenreCode in excludedGenreCodes:
-        return None
-
     budgetCode = shop.get("budget", {}).get("code", "")
     if budgetCode in {"B005", "B006", "B012", "B013", "B014"}:
         priceRange = "high"
