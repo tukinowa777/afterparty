@@ -14,9 +14,17 @@
 
 例: `http://192.168.1.10:8123`
 
+## HTTPS 起動
+
+- `bash scripts/start_https.sh` を実行する
+- 外部向けURLは `https://161.33.151.114:8443`
+- 自己署名証明書のため、初回はブラウザ警告が出ます
+- 常駐起動する場合は `bash scripts/run_public_https.sh`
+- 停止する場合は `bash scripts/stop_public_https.sh`
+
 ## 補足
 
-スマホで現在地取得を安定させるなら HTTPS 配信が望ましいです。LAN 内の簡易確認では、ブラウザやOSの設定次第で位置情報許可が必要になります。
+スマホで現在地取得を安定させるなら HTTPS 配信が望ましいです。このリポジトリでは `scripts/start_https.sh` で自己署名 HTTPS を起動できますが、実運用では正式証明書つきのドメイン運用が望ましいです。
 
 ## 現在の開発状況
 

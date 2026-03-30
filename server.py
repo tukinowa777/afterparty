@@ -2,6 +2,7 @@
 import argparse
 import http.server
 import json
+import ssl
 import socketserver
 from functools import partial
 from math import atan2, cos, sin, sqrt
@@ -14,10 +15,11 @@ from urllib.request import Request, urlopen
 PROJECT_ROOT = Path(__file__).resolve().parent
 VENUES_PATH = PROJECT_ROOT / "data" / "venues.json"
 STATIONS_PATH = PROJECT_ROOT / "data" / "stations.json"
+STATION_COORDINATES_PATH = PROJECT_ROOT / "data" / "station_coordinates.json"
 OVERPASS_API_URL = "https://overpass-api.de/api/interpreter"
 NOMINATIM_API_URL = "https://nominatim.openstreetmap.org/search"
 APP_USER_AGENT = "afterparty-izakaya-finder/0.1"
-stationCoordinateCache = {}
+stationCoordinateCache = None
 
 
 class ReusableTcpServer(socketserver.TCPServer):
@@ -46,11 +48,11 @@ class AppRequestHandler(http.server.SimpleHTTPRequestHandler):
         fallbackPayload = loadSampleVenues(filters)
 
         try:
-            liveVenues = fetchLiveVenues(filters)
+            liveVenues, resolvedFilters = fetchLiveVenues(filters)
             responsePayload = {
                 "venues": liveVenues[:3],
                 "count": len(liveVenues),
-                "filters": filters,
+                "filters": resolvedFilters,
                 "source": "live",
                 "sourceLabel": "OpenStreetMap / Overpass",
                 "attribution": "Map data from OpenStreetMap contributors",
@@ -223,12 +225,17 @@ def resolveSearchOrigin(filters):
     if filters["searchMode"] != "station" or not filters["station"]:
         return filters
 
+    global stationCoordinateCache
+    if stationCoordinateCache is None:
+        stationCoordinateCache = loadStationCoordinateCache()
+
     stationKey = f'{filters["line"]}:{filters["station"]}'
     if stationKey in stationCoordinateCache:
         latitude, longitude = stationCoordinateCache[stationKey]
     else:
         latitude, longitude = geocodeStation(filters["line"], filters["station"])
         stationCoordinateCache[stationKey] = (latitude, longitude)
+        saveStationCoordinateCache(stationCoordinateCache)
 
     return {
         **filters,
@@ -254,7 +261,6 @@ def fetchLiveVenues(filters):
 
     liveVenues = []
     for element in payload.get("elements", []):
-        normalizedVenue = normalizeOsmVenue(element, filters)
         normalizedVenue = normalizeOsmVenue(element, resolvedFilters)
         if normalizedVenue is None:
             continue
@@ -262,7 +268,7 @@ def fetchLiveVenues(filters):
         liveVenues.append(normalizedVenue)
 
     liveVenues.sort(key=lambda venue: venue["score"], reverse=True)
-    return liveVenues
+    return liveVenues, resolvedFilters
 
 
 def geocodeStation(lineKey, stationName):
@@ -300,6 +306,35 @@ def geocodeStation(lineKey, stationName):
 
     firstMatch = payload[0]
     return float(firstMatch["lat"]), float(firstMatch["lon"])
+
+
+def loadStationCoordinateCache():
+    try:
+        rawPayload = STATION_COORDINATES_PATH.read_text(encoding="utf-8")
+        payload = json.loads(rawPayload)
+    except FileNotFoundError:
+        return {}
+    except json.JSONDecodeError:
+        return {}
+
+    normalizedCache = {}
+    for stationKey, coordinatePair in payload.items():
+        if not isinstance(coordinatePair, list) or len(coordinatePair) != 2:
+            continue
+        normalizedCache[stationKey] = (float(coordinatePair[0]), float(coordinatePair[1]))
+
+    return normalizedCache
+
+
+def saveStationCoordinateCache(cachePayload):
+    serializablePayload = {
+        stationKey: [coordinates[0], coordinates[1]]
+        for stationKey, coordinates in cachePayload.items()
+    }
+    STATION_COORDINATES_PATH.write_text(
+        json.dumps(serializablePayload, ensure_ascii=False, indent=2),
+        encoding="utf-8",
+    )
 
 
 def buildOverpassQuery(filters):
@@ -446,11 +481,17 @@ def main():
     parser.add_argument("--host", default="0.0.0.0", help="Host to bind")
     parser.add_argument("--port", type=int, default=8123, help="Port to bind")
     parser.add_argument("--directory", default=".", help="Directory to serve")
+    parser.add_argument("--certfile", default="", help="TLS certificate file")
+    parser.add_argument("--keyfile", default="", help="TLS private key file")
     args = parser.parse_args()
 
     handlerClass = partial(AppRequestHandler, directory=args.directory)
 
     with ReusableTcpServer((args.host, args.port), handlerClass) as httpd:
+        if args.certfile and args.keyfile:
+            sslContext = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+            sslContext.load_cert_chain(certfile=args.certfile, keyfile=args.keyfile)
+            httpd.socket = sslContext.wrap_socket(httpd.socket, server_side=True)
         print(f"Serving {args.directory} at http://{args.host}:{args.port}")
         httpd.serve_forever()
 
