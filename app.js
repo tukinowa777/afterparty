@@ -131,6 +131,7 @@ const state = {
   budget: "low",
   venues: [],
   venueSource: "loading",
+  lastQueryString: "",
 };
 
 const locationLabel = document.getElementById("locationLabel");
@@ -145,38 +146,6 @@ const resultsList = document.getElementById("resultsList");
 const budgetGroup = document.getElementById("budgetGroup");
 const statusMessage = document.getElementById("statusMessage");
 const shareButton = document.getElementById("shareButton");
-
-function toRadians(value) {
-  return (value * Math.PI) / 180;
-}
-
-function getDistanceMeters(fromLat, fromLng, toLat, toLng) {
-  const earthRadius = 6371000;
-  const latDiff = toRadians(toLat - fromLat);
-  const lngDiff = toRadians(toLng - fromLng);
-  const a =
-    Math.sin(latDiff / 2) ** 2 +
-    Math.cos(toRadians(fromLat)) *
-      Math.cos(toRadians(toLat)) *
-      Math.sin(lngDiff / 2) ** 2;
-
-  return 2 * earthRadius * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-}
-
-function fitsBudget(venuePrice, selectedBudget) {
-  const order = ["low", "mid", "high"];
-  return order.indexOf(venuePrice) <= order.indexOf(selectedBudget);
-}
-
-function buildScore(venue, distanceMeters) {
-  const distanceScore = Math.max(0, 5000 - distanceMeters) / 100;
-  const lateNightScore =
-    venue.openUntilHour >= 26 ? 25 : venue.openUntilHour >= 24 ? 16 : 8;
-  const priceScore =
-    venue.priceRange === "low" ? 18 : venue.priceRange === "mid" ? 12 : 6;
-
-  return distanceScore + lateNightScore + priceScore;
-}
 
 function formatBudget(priceRange) {
   if (priceRange === "low") return "¥";
@@ -222,36 +191,19 @@ function getFilters() {
   };
 }
 
-function getRecommendations() {
+function buildSearchParams() {
   const filters = getFilters();
+  const params = new URLSearchParams();
 
-  return state.venues
-    .map((venue) => {
-      const distanceMeters = getDistanceMeters(
-        state.location.latitude,
-        state.location.longitude,
-        venue.latitude,
-        venue.longitude
-      );
+  params.set("partySize", String(filters.partySize));
+  params.set("cuisine", filters.cuisine);
+  params.set("distance", String(filters.maxDistanceMeters));
+  params.set("budget", filters.maxBudget);
+  params.set("openAfter21", String(filters.requireOpenAfter21));
+  params.set("latitude", String(state.location.latitude));
+  params.set("longitude", String(state.location.longitude));
 
-      return {
-        ...venue,
-        distanceMeters,
-        score: buildScore(venue, distanceMeters),
-      };
-    })
-    .filter((venue) => venue.distanceMeters <= filters.maxDistanceMeters)
-    .filter((venue) => fitsBudget(venue.priceRange, filters.maxBudget))
-    .filter(
-      (venue) =>
-        filters.partySize >= venue.minPartySize && filters.partySize <= venue.maxPartySize
-    )
-    .filter((venue) =>
-      filters.cuisine === "any" ? true : venue.cuisines.includes(filters.cuisine)
-    )
-    .filter((venue) => (filters.requireOpenAfter21 ? venue.openUntilHour >= 21 : true))
-    .sort((left, right) => right.score - left.score)
-    .slice(0, 3);
+  return params;
 }
 
 function renderEmpty() {
@@ -265,14 +217,13 @@ function renderEmpty() {
 }
 
 function renderRecommendations() {
-  const recommendations = getRecommendations();
-  if (recommendations.length === 0) {
+  if (state.venues.length === 0) {
     renderEmpty();
     return;
   }
 
-  resultsMeta.textContent = `${recommendations.length}件ヒット`;
-  resultsList.innerHTML = recommendations
+  resultsMeta.textContent = `${state.venues.length}件表示`;
+  resultsList.innerHTML = state.venues
     .map(
       (venue, index) => `
       <article class="result-card">
@@ -308,22 +259,26 @@ function setLocationNote(message) {
   locationNote.textContent = message;
 }
 
+function updateBudgetUi() {
+  budgetGroup.querySelectorAll(".chip").forEach((node) => {
+    node.classList.toggle("active", node.dataset.budget === state.budget);
+  });
+}
+
 function bindBudgetChips() {
   budgetGroup.querySelectorAll(".chip").forEach((chip) => {
     chip.addEventListener("click", () => {
       state.budget = chip.dataset.budget;
-      budgetGroup.querySelectorAll(".chip").forEach((node) => {
-        node.classList.toggle("active", node === chip);
-      });
-      renderRecommendations();
+      updateBudgetUi();
+      loadVenues();
     });
   });
 }
 
 function bindForm() {
   [partySizeInput, cuisineSelect, distanceSelect, openAfter21Checkbox].forEach((node) => {
-    node.addEventListener("input", renderRecommendations);
-    node.addEventListener("change", renderRecommendations);
+    node.addEventListener("input", loadVenues);
+    node.addEventListener("change", loadVenues);
   });
 }
 
@@ -347,7 +302,7 @@ function bindGeolocation() {
         setLocationNote("現在地を取得しました。この場所からおすすめ3件を再計算しています。");
         locateButton.disabled = false;
         locateButton.textContent = "現在地を使う";
-        renderRecommendations();
+        loadVenues();
       },
       () => {
         setLocationNote(
@@ -372,6 +327,8 @@ function applyFiltersFromUrl() {
   const distance = params.get("distance");
   const budget = params.get("budget");
   const openAfter21 = params.get("openAfter21");
+  const latitude = Number.parseFloat(params.get("latitude"));
+  const longitude = Number.parseFloat(params.get("longitude"));
 
   if (partySize) {
     partySizeInput.value = partySize;
@@ -387,26 +344,26 @@ function applyFiltersFromUrl() {
 
   if (budget && budgetGroup.querySelector(`[data-budget="${budget}"]`)) {
     state.budget = budget;
-    budgetGroup.querySelectorAll(".chip").forEach((node) => {
-      node.classList.toggle("active", node.dataset.budget === budget);
-    });
   }
 
   if (openAfter21 === "true" || openAfter21 === "false") {
     openAfter21Checkbox.checked = openAfter21 === "true";
   }
+
+  if (Number.isFinite(latitude) && Number.isFinite(longitude)) {
+    state.location.latitude = latitude;
+    state.location.longitude = longitude;
+    state.location.label = "共有された位置";
+    setLocationNote("共有URLの位置情報を検索の起点にしています。");
+  }
+
+  updateBudgetUi();
 }
 
 function bindShareButton() {
   shareButton.addEventListener("click", async () => {
-    const filters = getFilters();
     const url = new URL(window.location.href);
-
-    url.searchParams.set("partySize", String(filters.partySize));
-    url.searchParams.set("cuisine", filters.cuisine);
-    url.searchParams.set("distance", String(filters.maxDistanceMeters));
-    url.searchParams.set("budget", filters.maxBudget);
-    url.searchParams.set("openAfter21", String(filters.requireOpenAfter21));
+    url.search = buildSearchParams().toString();
 
     try {
       if (navigator.clipboard && window.isSecureContext) {
@@ -422,10 +379,12 @@ function bindShareButton() {
 }
 
 async function loadVenues() {
-  setStatusMessage("店舗データを読み込んでいます。");
+  const queryString = buildSearchParams().toString();
+  state.lastQueryString = queryString;
+  setStatusMessage("条件に合う店舗データを検索しています。");
 
   try {
-    const response = await fetch("./api/venues", {
+    const response = await fetch(`./api/venues?${queryString}`, {
       headers: {
         Accept: "application/json",
       },
@@ -436,12 +395,21 @@ async function loadVenues() {
     }
 
     const payload = await response.json();
+    if (state.lastQueryString !== queryString) {
+      return;
+    }
+
     state.venues = Array.isArray(payload.venues) ? payload.venues : [];
     state.venueSource = "api";
-    setStatusMessage(`${payload.count ?? state.venues.length}件の店舗データを読み込みました。`);
+    history.replaceState(null, "", `?${queryString}`);
+    setStatusMessage(`条件に合う店舗が${payload.count ?? state.venues.length}件見つかりました。`);
   } catch (error) {
-    state.venues = fallbackVenues;
+    if (state.lastQueryString !== queryString) {
+      return;
+    }
+
     state.venueSource = "fallback";
+    state.venues = fallbackVenues;
     setStatusMessage("APIの取得に失敗したため、内蔵サンプルデータで表示しています。");
   }
 
