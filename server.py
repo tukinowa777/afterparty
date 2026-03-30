@@ -479,8 +479,8 @@ def mapHotpepperRange(maxDistanceMeters):
 
 def mapHotpepperBudgetCodes(maxBudget):
     if maxBudget == "mid":
-        return ["B009", "B010", "B011", "B001", "B002", "B003", "B008"]
-    return ["B004", "B005", "B006", "B012", "B013", "B014"]
+        return ["B009", "B010", "B011", "B001", "B002", "B003", "B008", "B004"]
+    return ["B005", "B006", "B012", "B013", "B014"]
 
 
 def normalizeHotpepperVenue(shop):
@@ -497,9 +497,9 @@ def normalizeHotpepperVenue(shop):
         return None
 
     budgetCode = shop.get("budget", {}).get("code", "")
-    if budgetCode in {"B004", "B005", "B006", "B012", "B013", "B014"}:
+    if budgetCode in {"B005", "B006", "B012", "B013", "B014"}:
         priceRange = "high"
-    elif budgetCode in {"B003", "B008"}:
+    elif budgetCode in {"B003", "B008", "B004"}:
         priceRange = "mid"
     else:
         priceRange = "low"
