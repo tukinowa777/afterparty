@@ -607,8 +607,13 @@ async function loadVenues() {
     setSourceNote("内蔵サンプルデータを表示しています。");
   }
 
-  renderRecommendations();
-  setLoadingState(false);
+  if (state.lastQueryString === queryString) {
+    renderRecommendations();
+  }
+
+  if (state.lastQueryString === queryString) {
+    setLoadingState(false);
+  }
 }
 
 bindBudgetChips();
