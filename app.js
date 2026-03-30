@@ -128,6 +128,10 @@ const state = {
     longitude: 139.6917,
     label: "新宿駅周辺",
   },
+  searchMode: "gps",
+  lines: {},
+  selectedLine: "ginza",
+  selectedStation: "",
   budget: "low",
   venues: [],
   venueSource: "loading",
@@ -138,14 +142,19 @@ const locationLabel = document.getElementById("locationLabel");
 const locationNote = document.getElementById("locationNote");
 const locateButton = document.getElementById("locateButton");
 const partySizeInput = document.getElementById("partySize");
+const lineSelect = document.getElementById("lineSelect");
+const stationSelect = document.getElementById("stationSelect");
 const cuisineSelect = document.getElementById("cuisine");
 const distanceSelect = document.getElementById("distance");
 const openAfter21Checkbox = document.getElementById("openAfter21");
 const resultsMeta = document.getElementById("resultsMeta");
 const resultsList = document.getElementById("resultsList");
 const budgetGroup = document.getElementById("budgetGroup");
+const searchModeGroup = document.getElementById("searchModeGroup");
+const stationFields = document.getElementById("stationFields");
 const statusMessage = document.getElementById("statusMessage");
 const shareButton = document.getElementById("shareButton");
+const sourceNote = document.getElementById("sourceNote");
 
 function formatBudget(priceRange) {
   if (priceRange === "low") return "¥";
@@ -179,10 +188,24 @@ function setStatusMessage(message) {
   statusMessage.textContent = message;
 }
 
+function setSourceNote(message) {
+  if (!message) {
+    sourceNote.hidden = true;
+    sourceNote.textContent = "";
+    return;
+  }
+
+  sourceNote.hidden = false;
+  sourceNote.textContent = message;
+}
+
 function getFilters() {
   const parsedPartySize = Number.parseInt(partySizeInput.value, 10);
 
   return {
+    searchMode: state.searchMode,
+    line: state.selectedLine,
+    station: state.selectedStation,
     partySize: Number.isFinite(parsedPartySize) && parsedPartySize > 0 ? parsedPartySize : 4,
     maxBudget: state.budget,
     cuisine: cuisineSelect.value,
@@ -196,6 +219,9 @@ function buildSearchParams() {
   const params = new URLSearchParams();
 
   params.set("partySize", String(filters.partySize));
+  params.set("searchMode", filters.searchMode);
+  params.set("line", filters.line);
+  params.set("station", filters.station);
   params.set("cuisine", filters.cuisine);
   params.set("distance", String(filters.maxDistanceMeters));
   params.set("budget", filters.maxBudget);
@@ -259,9 +285,75 @@ function setLocationNote(message) {
   locationNote.textContent = message;
 }
 
+function updateSearchModeUi() {
+  searchModeGroup.querySelectorAll(".chip").forEach((node) => {
+    node.classList.toggle("active", node.dataset.mode === state.searchMode);
+  });
+  stationFields.hidden = state.searchMode !== "station";
+}
+
 function updateBudgetUi() {
   budgetGroup.querySelectorAll(".chip").forEach((node) => {
     node.classList.toggle("active", node.dataset.budget === state.budget);
+  });
+}
+
+function renderLineOptions() {
+  const entries = Object.entries(state.lines);
+  lineSelect.innerHTML = entries
+    .map(([lineKey, lineValue]) => `<option value="${lineKey}">${lineValue.label}</option>`)
+    .join("");
+
+  if (!state.lines[state.selectedLine] && entries.length > 0) {
+    state.selectedLine = entries[0][0];
+  }
+
+  lineSelect.value = state.selectedLine;
+}
+
+function renderStationOptions() {
+  const line = state.lines[state.selectedLine];
+  const stations = line ? line.stations : [];
+
+  stationSelect.innerHTML = stations
+    .map((stationName) => `<option value="${stationName}">${stationName}</option>`)
+    .join("");
+
+  if (!stations.includes(state.selectedStation)) {
+    state.selectedStation = stations[0] || "";
+  }
+
+  stationSelect.value = state.selectedStation;
+}
+
+function bindSearchMode() {
+  searchModeGroup.querySelectorAll(".chip").forEach((chip) => {
+    chip.addEventListener("click", () => {
+      state.searchMode = chip.dataset.mode;
+      if (state.searchMode === "station") {
+        state.location.label = `${state.selectedStation || "駅"}周辺`;
+        setLocationNote("選択した駅を検索の起点にしています。");
+      } else {
+        setLocationNote("位置情報を取得すると、現在地に近い順でおすすめを再計算します。");
+      }
+      updateSearchModeUi();
+      loadVenues();
+    });
+  });
+
+  lineSelect.addEventListener("change", () => {
+    state.selectedLine = lineSelect.value;
+    renderStationOptions();
+    state.location.label = `${state.selectedStation}駅周辺`;
+    setLocationNote("選択した駅を検索の起点にしています。");
+    loadVenues();
+  });
+
+  stationSelect.addEventListener("change", () => {
+    state.selectedStation = stationSelect.value;
+    state.location.label = `${state.selectedStation}駅周辺`;
+    setLocationNote("選択した駅を検索の起点にしています。");
+    loadVenues();
   });
 }
 
@@ -299,9 +391,11 @@ function bindGeolocation() {
           longitude: position.coords.longitude,
           label: "現在地",
         };
+        state.searchMode = "gps";
         setLocationNote("現在地を取得しました。この場所からおすすめ3件を再計算しています。");
         locateButton.disabled = false;
         locateButton.textContent = "現在地を使う";
+        updateSearchModeUi();
         loadVenues();
       },
       () => {
@@ -323,6 +417,9 @@ function bindGeolocation() {
 function applyFiltersFromUrl() {
   const params = new URLSearchParams(window.location.search);
   const partySize = params.get("partySize");
+  const searchMode = params.get("searchMode");
+  const line = params.get("line");
+  const station = params.get("station");
   const cuisine = params.get("cuisine");
   const distance = params.get("distance");
   const budget = params.get("budget");
@@ -332,6 +429,18 @@ function applyFiltersFromUrl() {
 
   if (partySize) {
     partySizeInput.value = partySize;
+  }
+
+  if (searchMode === "gps" || searchMode === "station") {
+    state.searchMode = searchMode;
+  }
+
+  if (line) {
+    state.selectedLine = line;
+  }
+
+  if (station) {
+    state.selectedStation = station;
   }
 
   if (cuisine && cuisineSelect.querySelector(`option[value="${cuisine}"]`)) {
@@ -353,11 +462,16 @@ function applyFiltersFromUrl() {
   if (Number.isFinite(latitude) && Number.isFinite(longitude)) {
     state.location.latitude = latitude;
     state.location.longitude = longitude;
-    state.location.label = "共有された位置";
-    setLocationNote("共有URLの位置情報を検索の起点にしています。");
+    state.location.label = state.searchMode === "station" ? `${state.selectedStation}駅周辺` : "共有された位置";
+    setLocationNote(
+      state.searchMode === "station"
+        ? "共有URLで指定された駅を検索の起点にしています。"
+        : "共有URLの位置情報を検索の起点にしています。"
+    );
   }
 
   updateBudgetUi();
+  updateSearchModeUi();
 }
 
 function bindShareButton() {
@@ -403,6 +517,11 @@ async function loadVenues() {
     state.venueSource = "api";
     history.replaceState(null, "", `?${queryString}`);
     setStatusMessage(`条件に合う店舗が${payload.count ?? state.venues.length}件見つかりました。`);
+    setSourceNote(
+      payload.source === "live"
+        ? `${payload.sourceLabel} を利用しています。${payload.attribution ?? ""}`.trim()
+        : `${payload.sourceLabel} を表示しています。`
+    );
   } catch (error) {
     if (state.lastQueryString !== queryString) {
       return;
@@ -411,6 +530,7 @@ async function loadVenues() {
     state.venueSource = "fallback";
     state.venues = fallbackVenues;
     setStatusMessage("APIの取得に失敗したため、内蔵サンプルデータで表示しています。");
+    setSourceNote("内蔵サンプルデータを表示しています。");
   }
 
   renderRecommendations();
@@ -419,6 +539,42 @@ async function loadVenues() {
 bindBudgetChips();
 bindForm();
 bindGeolocation();
+bindSearchMode();
 bindShareButton();
-applyFiltersFromUrl();
-loadVenues();
+
+async function loadStations() {
+  const response = await fetch("./api/stations", {
+    headers: {
+      Accept: "application/json",
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error(`Failed to load stations: ${response.status}`);
+  }
+
+  const payload = await response.json();
+  state.lines = payload.lines ?? {};
+  renderLineOptions();
+  renderStationOptions();
+}
+
+async function bootstrap() {
+  try {
+    await loadStations();
+  } catch (error) {
+    setStatusMessage("駅一覧の読み込みに失敗しました。現在地検索のみ利用できます。");
+  }
+
+  applyFiltersFromUrl();
+  renderLineOptions();
+  renderStationOptions();
+  updateSearchModeUi();
+  if (state.searchMode === "station" && state.selectedStation) {
+    state.location.label = `${state.selectedStation}駅周辺`;
+    setLocationNote("選択した駅を検索の起点にしています。");
+  }
+  loadVenues();
+}
+
+bootstrap();

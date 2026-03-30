@@ -74,6 +74,30 @@ h1 {
   padding: 18px 20px;
 }
 
+.mobile-guide {
+  margin-top: 14px;
+  padding: 16px 18px;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.mobile-guide-title,
+.mobile-guide-text {
+  margin: 0;
+}
+
+.mobile-guide-title {
+  font-size: 0.92rem;
+  font-weight: 800;
+  color: #fff3d9;
+}
+
+.mobile-guide-text {
+  margin-top: 8px;
+  color: #d4dce6;
+  line-height: 1.7;
+}
+
 .location-label,
 .location-note {
   margin: 0;
@@ -105,6 +129,7 @@ h1 {
 .locate-button {
   background: #fff;
   color: var(--text);
+  min-height: 48px;
   padding: 12px 18px;
   border-radius: 999px;
   font-weight: 700;
@@ -133,6 +158,7 @@ h1 {
   background: #fff;
   color: var(--text);
   border-radius: 999px;
+  min-height: 44px;
   padding: 10px 14px;
   font-weight: 700;
   cursor: pointer;
@@ -141,6 +167,11 @@ h1 {
 .field {
   display: block;
   margin-top: 16px;
+}
+
+.station-fields {
+  display: grid;
+  gap: 0;
 }
 
 .field > span,
@@ -170,6 +201,7 @@ select {
   background: #fff;
   color: var(--text);
   border-radius: 999px;
+  min-height: 44px;
   padding: 11px 15px;
   border: 1px solid var(--line);
   font-weight: 600;
@@ -196,8 +228,8 @@ select {
 }
 
 .toggle input {
-  width: 22px;
-  height: 22px;
+  width: 26px;
+  height: 26px;
   accent-color: var(--accent);
   margin-top: 8px;
 }
@@ -226,6 +258,13 @@ select {
 .status-message {
   margin: 0 0 12px;
   color: #d4dce6;
+  line-height: 1.6;
+}
+
+.source-note {
+  margin: 0 0 14px;
+  color: #f1c48a;
+  font-size: 0.92rem;
   line-height: 1.6;
 }
 
@@ -308,7 +347,7 @@ select {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 40px;
+  min-height: 44px;
   padding: 0 14px;
   border-radius: 999px;
   text-decoration: none;

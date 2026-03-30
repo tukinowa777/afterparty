@@ -28,12 +28,39 @@
           </div>
           <button id="locateButton" class="locate-button" type="button">現在地を使う</button>
         </div>
+
+        <div class="mobile-guide">
+          <p class="mobile-guide-title">スマホで使うときのポイント</p>
+          <p class="mobile-guide-text">
+            iPhone / Android では、位置情報を許可すると現在地検索が使えます。許可しない場合でも、駅を選んで周辺の店を探せます。
+          </p>
+        </div>
       </section>
 
       <section class="filters">
         <div class="filters-header">
           <h2>条件を設定</h2>
           <button id="shareButton" class="share-button" type="button">条件を共有</button>
+        </div>
+
+        <div class="field">
+          <span>検索方法</span>
+          <div class="chip-group" id="searchModeGroup">
+            <button class="chip active" data-mode="gps" type="button">現在地から探す</button>
+            <button class="chip" data-mode="station" type="button">駅から探す</button>
+          </div>
+        </div>
+
+        <div id="stationFields" class="station-fields" hidden>
+          <label class="field">
+            <span>路線</span>
+            <select id="lineSelect"></select>
+          </label>
+
+          <label class="field">
+            <span>駅</span>
+            <select id="stationSelect"></select>
+          </label>
         </div>
 
         <label class="field">
@@ -87,6 +114,7 @@
           <p id="resultsMeta">3件ヒット</p>
         </div>
         <p id="statusMessage" class="status-message" hidden></p>
+        <p id="sourceNote" class="source-note" hidden></p>
         <div id="resultsList" class="results-list"></div>
       </section>
     </main>
