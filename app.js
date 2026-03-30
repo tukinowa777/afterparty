@@ -640,6 +640,7 @@ async function loadStations() {
 }
 
 async function bootstrap() {
+  setLoadingState(false);
   try {
     await loadStations();
   } catch (error) {
