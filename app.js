@@ -132,7 +132,7 @@ const state = {
   lines: {},
   selectedLine: "ginza",
   selectedStation: "",
-  budget: "low",
+  budget: "mid",
   venues: [],
   venueSource: "loading",
   lastQueryString: "",
@@ -156,7 +156,6 @@ const budgetGroup = document.getElementById("budgetGroup");
 const searchModeGroup = document.getElementById("searchModeGroup");
 const stationFields = document.getElementById("stationFields");
 const statusMessage = document.getElementById("statusMessage");
-const shareButton = document.getElementById("shareButton");
 const sourceNote = document.getElementById("sourceNote");
 
 function formatBudget(priceRange) {
@@ -303,6 +302,27 @@ function updateBudgetUi() {
   });
 }
 
+async function fetchLocationLabel(latitude, longitude) {
+  const queryString = new URLSearchParams({
+    latitude: String(latitude),
+    longitude: String(longitude),
+  }).toString();
+  const response = await fetch(`./api/location-label?${queryString}`, {
+    headers: {
+      Accept: "application/json",
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error(`Failed to load location label: ${response.status}`);
+  }
+
+  const payload = await response.json();
+  if (payload.label) {
+    state.location.label = payload.label;
+  }
+}
+
 function renderLineOptions() {
   const entries = Object.entries(state.lines);
   lineSelect.innerHTML = entries
@@ -388,13 +408,18 @@ function requestCurrentLocation(isAutomatic) {
   locateButton.textContent = "取得中...";
 
   navigator.geolocation.getCurrentPosition(
-    (position) => {
+    async (position) => {
       state.location = {
         latitude: position.coords.latitude,
         longitude: position.coords.longitude,
         label: "現在地",
       };
       state.searchMode = "gps";
+      try {
+        await fetchLocationLabel(position.coords.latitude, position.coords.longitude);
+      } catch (error) {
+        state.location.label = `${position.coords.latitude.toFixed(5)}, ${position.coords.longitude.toFixed(5)}`;
+      }
       setLocationNote(
         isAutomatic
           ? "現在地の利用が許可されました。「探す」を押すとおすすめを表示します。"
@@ -483,24 +508,6 @@ function applyFiltersFromUrl() {
   updateSearchModeUi();
 }
 
-function bindShareButton() {
-  shareButton.addEventListener("click", async () => {
-    const url = new URL(window.location.href);
-    url.search = buildSearchParams().toString();
-
-    try {
-      if (navigator.clipboard && window.isSecureContext) {
-        await navigator.clipboard.writeText(url.toString());
-        setStatusMessage("共有用URLをクリップボードにコピーしました。");
-      } else {
-        setStatusMessage(`共有用URL: ${url.toString()}`);
-      }
-    } catch (error) {
-      setStatusMessage(`共有用URL: ${url.toString()}`);
-    }
-  });
-}
-
 function bindSearchButton() {
   [searchButton, searchButtonBottom].forEach((button) => {
     button.addEventListener("click", () => {
@@ -557,7 +564,6 @@ bindBudgetChips();
 bindForm();
 bindGeolocation();
 bindSearchMode();
-bindShareButton();
 bindSearchButton();
 
 async function loadStations() {

@@ -17,7 +17,8 @@ VENUES_PATH = PROJECT_ROOT / "data" / "venues.json"
 STATIONS_PATH = PROJECT_ROOT / "data" / "stations.json"
 STATION_COORDINATES_PATH = PROJECT_ROOT / "data" / "station_coordinates.json"
 OVERPASS_API_URL = "https://overpass-api.de/api/interpreter"
-NOMINATIM_API_URL = "https://nominatim.openstreetmap.org/search"
+NOMINATIM_SEARCH_API_URL = "https://nominatim.openstreetmap.org/search"
+NOMINATIM_REVERSE_API_URL = "https://nominatim.openstreetmap.org/reverse"
 APP_USER_AGENT = "afterparty-izakaya-finder/0.1"
 stationCoordinateCache = None
 
@@ -39,6 +40,9 @@ class AppRequestHandler(http.server.SimpleHTTPRequestHandler):
             return
         if parsedUrl.path == "/api/stations":
             self.serveStations()
+            return
+        if parsedUrl.path == "/api/location-label":
+            self.serveLocationLabel(parsedUrl.query)
             return
 
         super().do_GET()
@@ -96,6 +100,24 @@ class AppRequestHandler(http.server.SimpleHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(responseBody)
 
+    def serveLocationLabel(self, queryString):
+        params = parse_qs(queryString)
+        latitude = parseFloat(params.get("latitude", ["35.6895"])[0], 35.6895)
+        longitude = parseFloat(params.get("longitude", ["139.6917"])[0], 139.6917)
+
+        try:
+            locationLabel = reverseGeocodeLocation(latitude, longitude)
+        except (HTTPError, URLError, TimeoutError, ValueError):
+            locationLabel = f"{latitude:.5f}, {longitude:.5f}"
+
+        responseBody = json.dumps({"label": locationLabel}, ensure_ascii=False).encode("utf-8")
+        self.send_response(200)
+        self.send_header("Content-Type", "application/json; charset=utf-8")
+        self.send_header("Content-Length", str(len(responseBody)))
+        self.send_header("Cache-Control", "no-store")
+        self.end_headers()
+        self.wfile.write(responseBody)
+
 
 def parseFilters(queryString):
     params = parse_qs(queryString)
@@ -105,7 +127,7 @@ def parseFilters(queryString):
         "line": params.get("line", [""])[0],
         "station": params.get("station", [""])[0],
         "partySize": parseInt(params.get("partySize", ["4"])[0], 4),
-        "maxBudget": params.get("budget", ["low"])[0],
+        "maxBudget": params.get("budget", ["mid"])[0],
         "cuisine": params.get("cuisine", ["any"])[0],
         "maxDistanceMeters": parseInt(params.get("distance", ["2500"])[0], 2500),
         "requireOpenAfter21": params.get("openAfter21", ["true"])[0] != "false",
@@ -300,7 +322,7 @@ def geocodeStation(lineKey, stationName):
         }
     )
     request = Request(
-        f"{NOMINATIM_API_URL}?{requestQuery}",
+        f"{NOMINATIM_SEARCH_API_URL}?{requestQuery}",
         headers={
             "User-Agent": APP_USER_AGENT,
             "Accept": "application/json",
@@ -315,6 +337,49 @@ def geocodeStation(lineKey, stationName):
 
     firstMatch = payload[0]
     return float(firstMatch["lat"]), float(firstMatch["lon"])
+
+
+def reverseGeocodeLocation(latitude, longitude):
+    requestQuery = urlencode(
+        {
+            "lat": str(latitude),
+            "lon": str(longitude),
+            "format": "jsonv2",
+            "addressdetails": "1",
+            "zoom": "18",
+        }
+    )
+    request = Request(
+        f"{NOMINATIM_REVERSE_API_URL}?{requestQuery}",
+        headers={
+            "User-Agent": APP_USER_AGENT,
+            "Accept": "application/json",
+        },
+    )
+
+    with urlopen(request, timeout=12) as response:
+        payload = json.loads(response.read().decode("utf-8"))
+
+    address = payload.get("address", {})
+    areaParts = [
+        address.get("suburb"),
+        address.get("quarter"),
+        address.get("neighbourhood"),
+        address.get("city_district"),
+        address.get("city"),
+        address.get("town"),
+        address.get("village"),
+    ]
+
+    for areaPart in areaParts:
+        if areaPart:
+            return areaPart
+
+    displayName = payload.get("display_name")
+    if displayName:
+        return displayName.split(",")[0].strip()
+
+    raise ValueError("reverse geocoding failed")
 
 
 def loadStationCoordinateCache():
