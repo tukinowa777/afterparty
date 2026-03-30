@@ -130,6 +130,11 @@ h1 {
   line-height: 1.6;
 }
 
+.location-note.warning {
+  color: #b52a1d;
+  font-weight: 700;
+}
+
 .locate-button,
 .chip {
   border: 0;

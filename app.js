@@ -126,7 +126,7 @@ const state = {
   location: {
     latitude: 35.6895,
     longitude: 139.6917,
-    label: "新宿駅周辺",
+    label: "現在地",
     detail: "緯度 35.68950 / 経度 139.69170",
     accuracy: null,
   },
@@ -209,6 +209,10 @@ function setLoadingState(isLoading) {
   loadingIndicator.hidden = !isLoading;
   searchButton.disabled = isLoading;
   searchButtonBottom.disabled = isLoading;
+}
+
+function hasReliableLocation() {
+  return state.searchMode !== "gps" || !Number.isFinite(state.location.accuracy) || state.location.accuracy <= 300;
 }
 
 function getFilters() {
@@ -299,6 +303,7 @@ function setLocationNote(message) {
   locationLabel.textContent = state.location.label;
   locationDetail.textContent = state.location.detail;
   locationNote.textContent = message;
+  locationNote.classList.toggle("warning", !hasReliableLocation());
 }
 
 function updateSearchModeUi() {
@@ -331,7 +336,7 @@ async function fetchLocationLabel(latitude, longitude) {
 
   const payload = await response.json();
   if (payload.label) {
-    state.location.label = payload.label;
+    return;
   }
 }
 
@@ -378,6 +383,7 @@ function bindSearchMode() {
       if (state.searchMode === "station") {
         state.location.label = `${state.selectedStation || "駅"}周辺`;
         state.location.detail = "駅を検索起点にしています";
+        state.location.accuracy = null;
         setLocationNote("選択した駅を検索の起点にしています。『探す』を押すとおすすめを表示します。");
       } else {
         setLocationNote("現在地を取得してから『探す』を押すとおすすめを表示します。");
@@ -391,6 +397,7 @@ function bindSearchMode() {
     renderStationOptions();
     state.location.label = `${state.selectedStation}駅周辺`;
     state.location.detail = "駅を検索起点にしています";
+    state.location.accuracy = null;
     setLocationNote("選択した駅を検索の起点にしています。『探す』を押すとおすすめを表示します。");
   });
 
@@ -398,6 +405,7 @@ function bindSearchMode() {
     state.selectedStation = stationSelect.value;
     state.location.label = `${state.selectedStation}駅周辺`;
     state.location.detail = "駅を検索起点にしています";
+    state.location.accuracy = null;
     setLocationNote("選択した駅を検索の起点にしています。『探す』を押すとおすすめを表示します。");
   });
 }
@@ -449,10 +457,16 @@ function requestCurrentLocation(isAutomatic) {
       } catch (error) {
         state.location.label = "現在地";
       }
+      const reliabilityMessage =
+        Number.isFinite(position.coords.accuracy) && position.coords.accuracy > 300
+          ? "現在地の精度が低いため、この位置では店検索をおすすめできません。屋外で再取得するか、駅から探してください。"
+          : Number.isFinite(position.coords.accuracy) && position.coords.accuracy > 100
+            ? "現在地の精度がやや低いです。検索前に座標と精度を確認してください。"
+            : "現在地を取得しました。上の座標を検索起点にしています。『探す』を押すとおすすめを表示します。";
       setLocationNote(
         isAutomatic
-          ? "現在地の利用が許可されました。上の座標を検索起点にしています。「探す」を押すとおすすめを表示します。"
-          : "現在地を取得しました。上の座標を検索起点にしています。『探す』を押すとおすすめを表示します。"
+          ? reliabilityMessage.replace("『探す』", "「探す」")
+          : reliabilityMessage
       );
       locateButton.disabled = false;
       locateButton.textContent = "現在地を使う";
@@ -527,6 +541,7 @@ function applyFiltersFromUrl() {
     state.location.longitude = longitude;
     state.location.label = state.searchMode === "station" ? `${state.selectedStation}駅周辺` : "共有された位置";
     state.location.detail = formatLocationDetail(latitude, longitude, null);
+    state.location.accuracy = null;
     setLocationNote(
       state.searchMode === "station"
         ? "共有URLで指定された駅を検索の起点にしています。"
@@ -541,6 +556,10 @@ function applyFiltersFromUrl() {
 function bindSearchButton() {
   [searchButton, searchButtonBottom].forEach((button) => {
     button.addEventListener("click", () => {
+      if (!hasReliableLocation()) {
+        setLocationNote("現在地の精度が低いため検索できません。屋外で再取得するか、駅から探してください。");
+        return;
+      }
       loadVenues();
     });
   });
@@ -629,6 +648,7 @@ async function bootstrap() {
   if (state.searchMode === "station" && state.selectedStation) {
     state.location.label = `${state.selectedStation}駅周辺`;
     state.location.detail = "駅を検索起点にしています";
+    state.location.accuracy = null;
     setLocationNote("選択した駅を検索の起点にしています。『探す』を押すとおすすめを表示します。");
   }
   await autoRequestCurrentLocation();
