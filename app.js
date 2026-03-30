@@ -252,14 +252,14 @@ function buildSearchParams() {
 
 function renderEmpty() {
   const distanceMeters = Number.parseInt(distanceSelect.value, 10);
-  const distanceLabel = Number.isFinite(distanceMeters) ? `${distanceMeters}m` : "現在の距離条件";
+  const distanceLabel = Number.isFinite(distanceMeters) && distanceMeters === 800 ? "徒歩10分以内" : "現在の距離条件";
   resultsHeader.hidden = false;
   resultsPager.hidden = true;
   resultsMeta.textContent = "0件ヒット";
   resultsList.innerHTML = `
     <article class="empty">
       <h3>条件に合う店がありません</h3>
-      <p>${distanceLabel}以内では見つかりませんでした。距離を少し広げると候補が見つかりやすくなります。</p>
+      <p>${distanceLabel}で見つかりませんでした。料理ジャンルを変えると候補が見つかりやすくなります。</p>
     </article>
   `;
 }
