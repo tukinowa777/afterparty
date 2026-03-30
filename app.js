@@ -269,7 +269,7 @@ function renderRecommendations() {
   const searchOriginLabel = state.searchMode === "gps" ? "現在地" : `${state.location.label}`;
   const pageSize = 3;
   const pageCount = Math.ceil(state.venues.length / pageSize);
-  resultsPager.hidden = true;
+  resultsPager.hidden = pageCount <= 1;
   resultsMeta.textContent = `全${state.venues.length}件`;
   resultsList.innerHTML = Array.from({ length: pageCount }, (_, pageIndex) => {
     const startIndex = pageIndex * pageSize;
@@ -309,6 +309,9 @@ function renderRecommendations() {
       </section>
     `;
   }).join("");
+  resultsList.scrollTo({ left: 0, behavior: "auto" });
+  prevResultsButton.disabled = true;
+  nextResultsButton.disabled = pageCount <= 1;
 }
 
 function setLocationNote(message) {
@@ -537,7 +540,38 @@ function bindSearchButton() {
 }
 
 function bindResultsPager() {
-  return;
+  prevResultsButton.addEventListener("click", () => {
+    scrollResultsPage(-1);
+  });
+
+  nextResultsButton.addEventListener("click", () => {
+    scrollResultsPage(1);
+  });
+
+  resultsList.addEventListener("scroll", updateResultsPagerState, { passive: true });
+}
+
+function scrollResultsPage(direction) {
+  const pageWidth = resultsList.clientWidth;
+  if (!pageWidth) {
+    return;
+  }
+
+  resultsList.scrollBy({
+    left: pageWidth * direction,
+    behavior: "smooth",
+  });
+}
+
+function updateResultsPagerState() {
+  const pageWidth = resultsList.clientWidth;
+  if (!pageWidth) {
+    return;
+  }
+
+  const maxScrollLeft = Math.max(0, resultsList.scrollWidth - pageWidth);
+  prevResultsButton.disabled = resultsList.scrollLeft < 20;
+  nextResultsButton.disabled = resultsList.scrollLeft >= maxScrollLeft - 20;
 }
 
 async function loadVenues() {

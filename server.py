@@ -631,7 +631,59 @@ def normalizeHotpepperVenue(shop):
 
     genreNames = [shop.get("genre", {}).get("name", ""), shop.get("sub_genre", {}).get("name", "")]
     joinedGenres = " ".join(genreNames)
-    if any(keyword in joinedGenres for keyword in ["フレンチ", "イタリアン", "ビストロ", "スペイン", "各国料理", "カフェ", "カレー", "ラーメン", "定食", "喫茶"]):
+    if any(
+        keyword in joinedGenres
+        for keyword in [
+            "フレンチ",
+            "イタリアン",
+            "ビストロ",
+            "スペイン",
+            "各国料理",
+            "カフェ",
+            "カレー",
+            "ラーメン",
+            "定食",
+            "喫茶",
+            "アジア・エスニック料理",
+            "その他グルメ",
+            "お好み焼き・もんじゃ",
+            "韓国料理",
+            "中華",
+            "焼肉・ホルモン",
+            "洋食",
+        ]
+    ):
+        return None
+    if not any(
+        keyword in joinedGenres or keyword in shop.get("name", "")
+        for keyword in [
+            "居酒屋",
+            "和風",
+            "焼き鳥",
+            "鶏料理",
+            "酒場",
+            "バー",
+            "BAR",
+            "バル",
+            "ダイニングバー",
+            "魚民",
+            "笑笑",
+            "白木屋",
+            "山内農場",
+            "鳥貴族",
+            "磯丸",
+            "ミライザカ",
+            "さかなや道場",
+            "庄や",
+            "天狗",
+            "金の蔵",
+            "一軒め酒場",
+            "さくら水産",
+            "養老乃瀧",
+            "つぼ八",
+            "カラオケ",
+        ]
+    ):
         return None
     cuisineKeys = normalizeHotpepperCuisines(genreNames)
     openInfo = normalizeHotpepperOpenInfo(shop.get("open", ""), shop.get("midnight", ""))
