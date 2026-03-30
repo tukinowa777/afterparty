@@ -250,6 +250,7 @@ function renderRecommendations() {
     return;
   }
 
+  const walkLabel = state.searchMode === "gps" ? "現在地から徒歩" : "検索起点から徒歩";
   resultsMeta.textContent = `${state.venues.length}件表示`;
   resultsList.innerHTML = state.venues
     .map(
@@ -259,7 +260,7 @@ function renderRecommendations() {
           <div class="rank">${index + 1}</div>
           <div class="result-headline">
             <h3>${venue.name}</h3>
-            <p class="station">${venue.nearestStation}駅から徒歩${venue.walkMinutes}分</p>
+            <p class="station">${walkLabel}${venue.walkMinutes}分</p>
           </div>
           <div class="price">${formatBudget(venue.priceRange)}</div>
         </div>
