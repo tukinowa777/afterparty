@@ -136,6 +136,7 @@ const state = {
   venues: [],
   venueSource: "loading",
   lastQueryString: "",
+  autoLocateAttempted: false,
 };
 
 const locationLabel = document.getElementById("locationLabel");
@@ -376,42 +377,76 @@ function bindForm() {
 
 function bindGeolocation() {
   locateButton.addEventListener("click", () => {
-    if (!navigator.geolocation) {
-      setLocationNote("このブラウザは位置情報に対応していません。新宿駅周辺で検索しています。");
-      return;
-    }
-
-    locateButton.disabled = true;
-    locateButton.textContent = "取得中...";
-
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        state.location = {
-          latitude: position.coords.latitude,
-          longitude: position.coords.longitude,
-          label: "現在地",
-        };
-        state.searchMode = "gps";
-        setLocationNote("現在地を取得しました。この場所からおすすめ3件を再計算しています。");
-        locateButton.disabled = false;
-        locateButton.textContent = "現在地を使う";
-        updateSearchModeUi();
-        loadVenues();
-      },
-      () => {
-        setLocationNote(
-          "位置情報を取得できませんでした。ブラウザ権限または HTTPS 条件を確認してください。新宿駅周辺で検索しています。"
-        );
-        locateButton.disabled = false;
-        locateButton.textContent = "現在地を使う";
-      },
-      {
-        enableHighAccuracy: false,
-        timeout: 10000,
-        maximumAge: 300000,
-      }
-    );
+    requestCurrentLocation(false);
   });
+}
+
+function requestCurrentLocation(isAutomatic) {
+  if (!navigator.geolocation) {
+    setLocationNote("このブラウザは位置情報に対応していません。駅を選んで周辺の店を探してください。");
+    return;
+  }
+
+  locateButton.disabled = true;
+  locateButton.textContent = "取得中...";
+
+  navigator.geolocation.getCurrentPosition(
+    (position) => {
+      state.location = {
+        latitude: position.coords.latitude,
+        longitude: position.coords.longitude,
+        label: "現在地",
+      };
+      state.searchMode = "gps";
+      setLocationNote(
+        isAutomatic
+          ? "現在地の利用が許可されました。この場所からおすすめ3件を表示しています。"
+          : "現在地を取得しました。この場所からおすすめ3件を再計算しています。"
+      );
+      locateButton.disabled = false;
+      locateButton.textContent = "現在地を使う";
+      updateSearchModeUi();
+      loadVenues();
+    },
+    () => {
+      setLocationNote(
+        "位置情報を取得できませんでした。ブラウザ権限を確認するか、下の『駅から探す』を使ってください。"
+      );
+      locateButton.disabled = false;
+      locateButton.textContent = "現在地を使う";
+    },
+    {
+      enableHighAccuracy: false,
+      timeout: 10000,
+      maximumAge: 300000,
+    }
+  );
+}
+
+async function autoRequestCurrentLocation() {
+  if (state.autoLocateAttempted || state.searchMode !== "gps") {
+    return;
+  }
+
+  state.autoLocateAttempted = true;
+
+  if (!navigator.geolocation) {
+    return;
+  }
+
+  if (navigator.permissions && navigator.permissions.query) {
+    try {
+      const permissionStatus = await navigator.permissions.query({ name: "geolocation" });
+      if (permissionStatus.state === "denied") {
+        setLocationNote("位置情報は拒否されています。下の『駅から探す』も使えます。");
+        return;
+      }
+    } catch (error) {
+      // 権限APIに依存しない
+    }
+  }
+
+  requestCurrentLocation(true);
 }
 
 function applyFiltersFromUrl() {
@@ -574,6 +609,7 @@ async function bootstrap() {
     state.location.label = `${state.selectedStation}駅周辺`;
     setLocationNote("選択した駅を検索の起点にしています。");
   }
+  await autoRequestCurrentLocation();
   loadVenues();
 }
 
