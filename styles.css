@@ -295,8 +295,11 @@ select {
 }
 
 .results-list {
-  display: grid;
-  gap: 14px;
+  display: flex;
+  gap: 16px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  padding-bottom: 8px;
 }
 
 .results-pager {
@@ -308,6 +311,13 @@ select {
 
 .results-pager[hidden] {
   display: none !important;
+}
+
+.results-page {
+  min-width: 100%;
+  display: grid;
+  gap: 14px;
+  scroll-snap-align: start;
 }
 
 .pager-button {

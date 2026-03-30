@@ -268,15 +268,17 @@ function renderRecommendations() {
   resultsHeader.hidden = false;
   const searchOriginLabel = state.searchMode === "gps" ? "現在地" : `${state.location.label}`;
   const pageSize = 3;
-  const startIndex = state.currentPage * pageSize;
-  const visibleVenues = state.venues.slice(startIndex, startIndex + pageSize);
-  resultsPager.hidden = state.venues.length <= pageSize;
-  prevResultsButton.disabled = state.currentPage === 0;
-  nextResultsButton.disabled = startIndex + pageSize >= state.venues.length;
-  resultsMeta.textContent = `${startIndex + 1}-${Math.min(startIndex + visibleVenues.length, state.venues.length)}件 / 全${state.venues.length}件`;
-  resultsList.innerHTML = visibleVenues
-    .map(
-      (venue, index) => `
+  const pageCount = Math.ceil(state.venues.length / pageSize);
+  resultsPager.hidden = true;
+  resultsMeta.textContent = `全${state.venues.length}件`;
+  resultsList.innerHTML = Array.from({ length: pageCount }, (_, pageIndex) => {
+    const startIndex = pageIndex * pageSize;
+    const visibleVenues = state.venues.slice(startIndex, startIndex + pageSize);
+    return `
+      <section class="results-page" aria-label="${startIndex + 1}件目から${Math.min(startIndex + visibleVenues.length, state.venues.length)}件目">
+        ${visibleVenues
+          .map(
+            (venue, index) => `
       <article class="result-card">
         <div class="result-top">
           <div class="rank">${startIndex + index + 1}</div>
@@ -289,6 +291,7 @@ function renderRecommendations() {
         <div class="meta">
           <span class="pill">徒歩${venue.walkMinutes}分</span>
           <span class="pill">${formatBusinessHours(venue)}</span>
+          <span class="pill">${venue.smokingLabel || "要確認"}</span>
         </div>
         <p class="genres">${venue.cuisines.map((item) => cuisineLabels[item]).join(" / ")}</p>
         <p class="features">${venue.features.join(" • ")}</p>
@@ -301,8 +304,11 @@ function renderRecommendations() {
         </div>
       </article>
     `
-    )
-    .join("");
+          )
+          .join("")}
+      </section>
+    `;
+  }).join("");
 }
 
 function setLocationNote(message) {
@@ -531,22 +537,7 @@ function bindSearchButton() {
 }
 
 function bindResultsPager() {
-  prevResultsButton.addEventListener("click", () => {
-    if (state.currentPage === 0) {
-      return;
-    }
-    state.currentPage -= 1;
-    renderRecommendations();
-  });
-
-  nextResultsButton.addEventListener("click", () => {
-    const nextStart = (state.currentPage + 1) * 3;
-    if (nextStart >= state.venues.length) {
-      return;
-    }
-    state.currentPage += 1;
-    renderRecommendations();
-  });
+  return;
 }
 
 async function loadVenues() {

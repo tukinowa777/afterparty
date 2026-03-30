@@ -227,7 +227,50 @@ def buildScore(venue, distanceMeters):
     else:
         priceScore = 6
 
-    return distanceScore + lateNightScore + priceScore
+    return distanceScore + lateNightScore + priceScore + buildGenrePriorityScore(venue)
+
+
+def buildGenrePriorityScore(venue):
+    genreText = " ".join(
+        [
+            venue.get("genreLabel", ""),
+            venue.get("subGenreLabel", ""),
+            venue.get("name", ""),
+        ]
+    )
+
+    if any(keyword in genreText for keyword in ["和風", "居酒屋", "酒場", "大衆酒場"]):
+        return 28
+
+    if any(
+        keyword in genreText
+        for keyword in [
+            "魚民",
+            "笑笑",
+            "白木屋",
+            "山内農場",
+            "鳥貴族",
+            "磯丸",
+            "ミライザカ",
+            "さかなや道場",
+            "庄や",
+            "天狗",
+            "金の蔵",
+            "一軒め酒場",
+            "さくら水産",
+            "養老乃瀧",
+            "つぼ八",
+        ]
+    ):
+        return 24
+
+    if any(keyword in genreText for keyword in ["バー", "BAR", "バル", "ダイニングバー", "カラオケ"]):
+        return 20
+
+    if any(keyword in genreText for keyword in ["焼き鳥", "鶏料理"]):
+        return 16
+
+    return 0
 
 
 def filterVenues(venues, filters):
@@ -607,6 +650,9 @@ def normalizeHotpepperVenue(shop):
         "closeLabel": openInfo["closeLabel"],
         "lastOrderLabel": openInfo["lastOrderLabel"],
         "priceRange": priceRange,
+        "smokingLabel": normalizeHotpepperSmokingLabel(shop.get("non_smoking", "")),
+        "genreLabel": shop.get("genre", {}).get("name", ""),
+        "subGenreLabel": shop.get("sub_genre", {}).get("name", ""),
         "minPartySize": 1,
         "maxPartySize": parseInt(shop.get("party_capacity"), 12),
         "cuisines": cuisineKeys,
@@ -696,6 +742,19 @@ def normalizeHotpepperCuisines(genreNames):
     if not cuisineKeys:
         cuisineKeys.append("japanese")
     return cuisineKeys
+
+
+def normalizeHotpepperSmokingLabel(nonSmokingText):
+    normalizedText = str(nonSmokingText).strip()
+    if not normalizedText or normalizedText == "未確認":
+        return "要確認"
+    if any(keyword in normalizedText for keyword in ["全面禁煙", "禁煙席のみ", "禁煙"]):
+        return "禁煙"
+    if any(keyword in normalizedText for keyword in ["一部禁煙", "分煙"]):
+        return "分煙"
+    if any(keyword in normalizedText for keyword in ["禁煙席なし", "喫煙"]):
+        return "喫煙可"
+    return "要確認"
 
 
 def extractStationWalkMinutes(stationName, accessText, listedStationName=""):
