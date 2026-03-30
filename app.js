@@ -284,9 +284,10 @@ function renderRecommendations() {
         <p class="features">${venue.features.join(" • ")}</p>
         <div class="result-actions">
           <a class="action-link primary" href="${buildMapLink(venue)}" target="_blank" rel="noreferrer">地図で開く</a>
-          <a class="action-link secondary" href="https://www.google.com/search?q=${encodeURIComponent(
-            `${venue.name} ${venue.nearestStation}`
-          )}" target="_blank" rel="noreferrer">店を調べる</a>
+          <a class="action-link secondary" href="${
+            venue.hotpepperUrl ||
+            `https://www.google.com/search?q=${encodeURIComponent(`${venue.name} ${venue.nearestStation}`)}`
+          }" target="_blank" rel="noreferrer">ホットペッパーでみる</a>
         </div>
       </article>
     `
