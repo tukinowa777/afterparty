@@ -147,7 +147,6 @@ const locationNote = document.getElementById("locationNote");
 const locateButton = document.getElementById("locateButton");
 const searchButton = document.getElementById("searchButton");
 const searchButtonBottom = document.getElementById("searchButtonBottom");
-const partySizeInput = document.getElementById("partySize");
 const lineSelect = document.getElementById("lineSelect");
 const stationSelect = document.getElementById("stationSelect");
 const cuisineSelect = document.getElementById("cuisine");
@@ -224,13 +223,10 @@ function hasReliableLocation() {
 }
 
 function getFilters() {
-  const parsedPartySize = Number.parseInt(partySizeInput.value, 10);
-
   return {
     searchMode: state.searchMode,
     line: state.selectedLine,
     station: state.selectedStation,
-    partySize: Number.isFinite(parsedPartySize) && parsedPartySize > 0 ? parsedPartySize : 4,
     maxBudget: "mid",
     cuisine: cuisineSelect.value,
     maxDistanceMeters: Number.parseInt(distanceSelect.value, 10),
@@ -242,7 +238,6 @@ function buildSearchParams() {
   const filters = getFilters();
   const params = new URLSearchParams();
 
-  params.set("partySize", String(filters.partySize));
   params.set("searchMode", filters.searchMode);
   params.set("line", filters.line);
   params.set("station", filters.station);
@@ -300,7 +295,6 @@ function renderRecommendations() {
           <span class="pill">徒歩${venue.walkMinutes}分</span>
           <span class="pill">${Math.round(venue.distanceMeters)}m</span>
           <span class="pill">${formatBusinessHours(venue)}</span>
-          <span class="pill">${venue.minPartySize}-${venue.maxPartySize}名</span>
         </div>
         <p class="genres">${venue.cuisines.map((item) => cuisineLabels[item]).join(" / ")}</p>
         <p class="features">${venue.features.join(" • ")}</p>
@@ -480,7 +474,6 @@ async function autoRequestCurrentLocation() {
 
 function applyFiltersFromUrl() {
   const params = new URLSearchParams(window.location.search);
-  const partySize = params.get("partySize");
   const searchMode = params.get("searchMode");
   const line = params.get("line");
   const station = params.get("station");
@@ -489,10 +482,6 @@ function applyFiltersFromUrl() {
   const openAfter21 = params.get("openAfter21");
   const latitude = Number.parseFloat(params.get("latitude"));
   const longitude = Number.parseFloat(params.get("longitude"));
-
-  if (partySize) {
-    partySizeInput.value = partySize;
-  }
 
   if (searchMode === "gps" || searchMode === "station") {
     state.searchMode = searchMode;

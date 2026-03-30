@@ -238,9 +238,6 @@ def filterVenues(venues, filters):
         if not fitsBudget(venue["priceRange"], filters["maxBudget"]):
             continue
 
-        if not (venue["minPartySize"] <= filters["partySize"] <= venue["maxPartySize"]):
-            continue
-
         if filters["cuisine"] != "any" and filters["cuisine"] not in venue["cuisines"]:
             continue
 
@@ -352,7 +349,6 @@ def fetchHotpepperVenues(filters):
         ("range", mapHotpepperRange(filters["maxDistanceMeters"])),
         ("count", "30"),
         ("order", "4"),
-        ("party_capacity", str(max(filters["partySize"], 2))),
     ]
 
     for budgetCode in budgetCodes:
