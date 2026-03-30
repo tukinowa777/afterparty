@@ -205,7 +205,14 @@ def filterVenues(venues, filters):
             }
         )
 
-    rankedVenues.sort(key=lambda venue: venue["score"], reverse=True)
+    rankedVenues.sort(
+        key=lambda venue: (
+            round(venue["distanceMeters"]),
+            venue["walkMinutes"],
+            -venue["openUntilHour"],
+            venue["name"],
+        )
+    )
     return rankedVenues
 
 

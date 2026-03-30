@@ -258,11 +258,12 @@ function renderRecommendations() {
           <div class="rank">${index + 1}</div>
           <div class="result-headline">
             <h3>${venue.name}</h3>
-            <p class="station">${venue.nearestStation}駅 徒歩${venue.walkMinutes}分</p>
+            <p class="station">${venue.nearestStation}駅から徒歩${venue.walkMinutes}分</p>
           </div>
           <div class="price">${formatBudget(venue.priceRange)}</div>
         </div>
         <div class="meta">
+          <span class="pill">徒歩${venue.walkMinutes}分</span>
           <span class="pill">${Math.round(venue.distanceMeters)}m</span>
           <span class="pill">営業 ${formatHour(venue.openUntilHour)}まで</span>
           <span class="pill">${venue.minPartySize}-${venue.maxPartySize}名</span>
