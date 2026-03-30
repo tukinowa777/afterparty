@@ -2,6 +2,8 @@
 import argparse
 import http.server
 import json
+import os
+import re
 import ssl
 import socketserver
 from functools import partial
@@ -17,9 +19,12 @@ VENUES_PATH = PROJECT_ROOT / "data" / "venues.json"
 STATIONS_PATH = PROJECT_ROOT / "data" / "stations.json"
 STATION_COORDINATES_PATH = PROJECT_ROOT / "data" / "station_coordinates.json"
 OVERPASS_API_URL = "https://overpass-api.de/api/interpreter"
+HOTPEPPER_GOURMET_API_URL = "https://webservice.recruit.co.jp/hotpepper/gourmet/v1/"
 NOMINATIM_SEARCH_API_URL = "https://nominatim.openstreetmap.org/search"
 NOMINATIM_REVERSE_API_URL = "https://nominatim.openstreetmap.org/reverse"
+OSRM_TABLE_API_URL = "https://router.project-osrm.org/table/v1/foot/"
 APP_USER_AGENT = "afterparty-izakaya-finder/0.1"
+HOTPEPPER_API_KEY = os.environ.get("HOTPEPPER_API_KEY", "").strip()
 stationCoordinateCache = None
 
 
@@ -52,25 +57,36 @@ class AppRequestHandler(http.server.SimpleHTTPRequestHandler):
         fallbackPayload = loadSampleVenues(filters)
 
         try:
-            liveVenues, resolvedFilters = fetchLiveVenues(filters)
+            hotpepperVenues, resolvedFilters = fetchHotpepperVenues(filters)
             responsePayload = {
-                "venues": liveVenues[:3],
-                "count": len(liveVenues),
+                "venues": hotpepperVenues[:3],
+                "count": len(hotpepperVenues),
                 "filters": resolvedFilters,
-                "source": "live",
-                "sourceLabel": "OpenStreetMap / Overpass",
-                "attribution": "Map data from OpenStreetMap contributors",
+                "source": "hotpepper",
+                "sourceLabel": "ホットペッパーグルメ",
+                "attribution": "Powered by ホットペッパーグルメ Webサービス",
             }
-        except (FileNotFoundError, json.JSONDecodeError):
-            self.send_error(500, "venues data is invalid")
-            return
         except (HTTPError, URLError, TimeoutError, ValueError):
-            responsePayload = {
-                **fallbackPayload,
-                "source": "sample",
-                "sourceLabel": "内蔵サンプルデータ",
-                "attribution": "",
-            }
+            try:
+                liveVenues, resolvedFilters = fetchLiveVenues(filters)
+                responsePayload = {
+                    "venues": liveVenues[:3],
+                    "count": len(liveVenues),
+                    "filters": resolvedFilters,
+                    "source": "live",
+                    "sourceLabel": "OpenStreetMap / Overpass",
+                    "attribution": "Map data from OpenStreetMap contributors",
+                }
+            except (FileNotFoundError, json.JSONDecodeError):
+                self.send_error(500, "venues data is invalid")
+                return
+            except (HTTPError, URLError, TimeoutError, ValueError):
+                responsePayload = {
+                    **fallbackPayload,
+                    "source": "sample",
+                    "sourceLabel": "内蔵サンプルデータ",
+                    "attribution": "",
+                }
 
         responseBody = json.dumps(responsePayload, ensure_ascii=False).encode("utf-8")
 
@@ -298,8 +314,68 @@ def fetchLiveVenues(filters):
 
         liveVenues.append(normalizedVenue)
 
-    liveVenues.sort(key=lambda venue: venue["score"], reverse=True)
+    liveVenues = enrichWalkingMetrics(liveVenues, resolvedFilters)
+    liveVenues.sort(
+        key=lambda venue: (
+            round(venue["distanceMeters"]),
+            venue["walkMinutes"],
+            -venue["openUntilHour"],
+            venue["name"],
+        )
+    )
     return liveVenues, resolvedFilters
+
+
+def fetchHotpepperVenues(filters):
+    if not HOTPEPPER_API_KEY:
+        raise ValueError("hotpepper api key is missing")
+
+    resolvedFilters = resolveSearchOrigin(filters)
+    budgetCodes = mapHotpepperBudgetCodes(filters["maxBudget"])
+    requestParams = [
+        ("key", HOTPEPPER_API_KEY),
+        ("format", "json"),
+        ("lat", f'{resolvedFilters["latitude"]:.6f}'),
+        ("lng", f'{resolvedFilters["longitude"]:.6f}'),
+        ("range", mapHotpepperRange(filters["maxDistanceMeters"])),
+        ("count", "30"),
+        ("order", "4"),
+        ("party_capacity", str(max(filters["partySize"], 2))),
+    ]
+
+    for budgetCode in budgetCodes:
+        requestParams.append(("budget", budgetCode))
+
+    request = Request(
+        f"{HOTPEPPER_GOURMET_API_URL}?{urlencode(requestParams)}",
+        headers={
+            "User-Agent": APP_USER_AGENT,
+            "Accept": "application/json",
+        },
+    )
+
+    with urlopen(request, timeout=12) as response:
+        payload = json.loads(response.read().decode("utf-8"))
+
+    shops = payload.get("results", {}).get("shop", [])
+    normalizedVenues = []
+    for shop in shops:
+        normalizedVenue = normalizeHotpepperVenue(shop)
+        if normalizedVenue is None:
+            continue
+        normalizedVenues.append(normalizedVenue)
+
+    filteredVenues = filterVenues(normalizedVenues, resolvedFilters)
+    filteredVenues = enrichWalkingMetrics(filteredVenues, resolvedFilters)
+    filteredVenues.sort(
+        key=lambda venue: (
+            round(venue["distanceMeters"]),
+            venue["walkMinutes"],
+            -venue["openUntilHour"],
+            venue["name"],
+        )
+    )
+    return filteredVenues, resolvedFilters
 
 
 def geocodeStation(lineKey, stationName):
@@ -387,6 +463,167 @@ def reverseGeocodeLocation(latitude, longitude):
         return ", ".join(displayParts[:4])
 
     raise ValueError("reverse geocoding failed")
+
+
+def mapHotpepperRange(maxDistanceMeters):
+    if maxDistanceMeters <= 300:
+        return "1"
+    if maxDistanceMeters <= 500:
+        return "2"
+    if maxDistanceMeters <= 1000:
+        return "3"
+    if maxDistanceMeters <= 2000:
+        return "4"
+    return "5"
+
+
+def mapHotpepperBudgetCodes(maxBudget):
+    if maxBudget == "mid":
+        return ["B009", "B010", "B011", "B001", "B002", "B003", "B008"]
+    return ["B004", "B005", "B006", "B012", "B013", "B014"]
+
+
+def normalizeHotpepperVenue(shop):
+    try:
+        latitude = float(shop["lat"])
+        longitude = float(shop["lng"])
+    except (KeyError, TypeError, ValueError):
+        return None
+
+    excludedGenreCodes = {"G014", "G015", "G013"}
+    genreCode = shop.get("genre", {}).get("code", "")
+    subGenreCode = shop.get("sub_genre", {}).get("code", "")
+    if genreCode in excludedGenreCodes or subGenreCode in excludedGenreCodes:
+        return None
+
+    budgetCode = shop.get("budget", {}).get("code", "")
+    if budgetCode in {"B004", "B005", "B006", "B012", "B013", "B014"}:
+        priceRange = "high"
+    elif budgetCode in {"B003", "B008"}:
+        priceRange = "mid"
+    else:
+        priceRange = "low"
+
+    genreNames = [shop.get("genre", {}).get("name", ""), shop.get("sub_genre", {}).get("name", "")]
+    cuisineKeys = normalizeHotpepperCuisines(genreNames)
+    openUntilHour = normalizeHotpepperOpenUntilHour(shop.get("open", ""), shop.get("midnight", ""))
+    features = buildHotpepperFeatures(shop)
+
+    return {
+        "id": shop.get("id", ""),
+        "name": shop.get("name", "店名不明"),
+        "latitude": latitude,
+        "longitude": longitude,
+        "walkMinutes": 0,
+        "nearestStation": shop.get("station_name", "現在地周辺"),
+        "openUntilHour": openUntilHour,
+        "priceRange": priceRange,
+        "minPartySize": 1,
+        "maxPartySize": parseInt(shop.get("party_capacity"), 12),
+        "cuisines": cuisineKeys,
+        "features": features,
+        "address": shop.get("address", ""),
+        "hotpepperUrl": shop.get("urls", {}).get("pc", ""),
+        "photoUrl": shop.get("photo", {}).get("pc", {}).get("m", ""),
+        "budgetText": shop.get("budget", {}).get("average", "") or shop.get("budget", {}).get("name", ""),
+    }
+
+
+def enrichWalkingMetrics(venues, filters):
+    if not venues:
+        return venues
+
+    coordinates = [f'{filters["longitude"]},{filters["latitude"]}']
+    for venue in venues:
+        coordinates.append(f'{venue["longitude"]},{venue["latitude"]}')
+
+    requestQuery = urlencode(
+        {
+            "sources": "0",
+            "annotations": "duration,distance",
+        }
+    )
+    request = Request(
+        f'{OSRM_TABLE_API_URL}{";".join(coordinates)}?{requestQuery}',
+        headers={
+            "User-Agent": APP_USER_AGENT,
+            "Accept": "application/json",
+        },
+    )
+
+    try:
+        with urlopen(request, timeout=12) as response:
+            payload = json.loads(response.read().decode("utf-8"))
+    except (HTTPError, URLError, TimeoutError, ValueError):
+        return venues
+
+    durations = payload.get("durations", [])
+    distances = payload.get("distances", [])
+    if not durations or not distances:
+        return venues
+
+    sourceDurations = durations[0]
+    sourceDistances = distances[0]
+    for index, venue in enumerate(venues, start=1):
+        routeDuration = sourceDurations[index] if index < len(sourceDurations) else None
+        routeDistance = sourceDistances[index] if index < len(sourceDistances) else None
+        if routeDuration is None or routeDistance is None:
+            continue
+
+        venue["distanceMeters"] = float(routeDistance)
+        venue["walkMinutes"] = max(1, round(float(routeDuration) / 60))
+        venue["score"] = buildScore(venue, venue["distanceMeters"])
+
+    return venues
+
+
+def normalizeHotpepperCuisines(genreNames):
+    joinedNames = " ".join(genreNames)
+    cuisineKeys = []
+    if "焼き鳥" in joinedNames:
+        cuisineKeys.append("yakitori")
+    if "海鮮" in joinedNames or "魚" in joinedNames:
+        cuisineKeys.append("seafood")
+    if "韓国" in joinedNames:
+        cuisineKeys.append("korean")
+    if "肉" in joinedNames or "焼肉" in joinedNames or "ステーキ" in joinedNames:
+        cuisineKeys.append("meat")
+    if "創作" in joinedNames or "ダイニング" in joinedNames or "イタリアン" in joinedNames:
+        cuisineKeys.append("creative")
+    if not cuisineKeys:
+        cuisineKeys.append("japanese")
+    return cuisineKeys
+
+
+def normalizeHotpepperOpenUntilHour(openText, midnightText):
+    if midnightText == "営業している":
+        return 24
+
+    hourCandidates = []
+    for rawHour in re.findall(r"(翌)?(\d{1,2}):\d{2}", openText):
+        isNextDay, hourText = rawHour
+        hourValue = int(hourText)
+        if isNextDay:
+            hourValue += 24
+        hourCandidates.append(hourValue)
+
+    if hourCandidates:
+        return max(hourCandidates)
+
+    return 24
+
+
+def buildHotpepperFeatures(shop):
+    featureKeys = []
+    for key in ["catch", "private_room", "free_drink", "free_food", "wifi", "non_smoking"]:
+        value = shop.get(key)
+        if value and value != "なし":
+            featureKeys.append(str(value))
+
+    if not featureKeys and shop.get("access"):
+        featureKeys.append(shop["access"])
+
+    return featureKeys[:3] if featureKeys else ["ホットペッパー掲載店"]
 
 
 def loadStationCoordinateCache():
