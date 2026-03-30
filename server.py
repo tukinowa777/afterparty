@@ -26,6 +26,7 @@ OSRM_TABLE_API_URL = "https://router.project-osrm.org/table/v1/foot/"
 APP_USER_AGENT = "afterparty-izakaya-finder/0.1"
 HOTPEPPER_API_KEY = os.environ.get("HOTPEPPER_API_KEY", "").strip()
 stationCoordinateCache = None
+stationLinesIndex = None
 
 
 class ReusableTcpServer(socketserver.TCPServer):
@@ -90,7 +91,7 @@ class AppRequestHandler(http.server.SimpleHTTPRequestHandler):
                 except (FileNotFoundError, json.JSONDecodeError):
                     self.send_error(500, "venues data is invalid")
                     return
-                except ValueError:
+                except (HTTPError, URLError, TimeoutError, ValueError):
                     responsePayload = {
                         "venues": [],
                         "count": 0,
@@ -285,16 +286,18 @@ def resolveSearchOrigin(filters):
     if stationCoordinateCache is None:
         stationCoordinateCache = loadStationCoordinateCache()
 
-    stationKey = f'{filters["line"]}:{filters["station"]}'
+    canonicalLineKey = resolveStationLine(filters["line"], filters["station"])
+    stationKey = f"{canonicalLineKey}:{filters['station']}"
     if stationKey in stationCoordinateCache:
         latitude, longitude = stationCoordinateCache[stationKey]
     else:
-        latitude, longitude = geocodeStation(filters["line"], filters["station"])
+        latitude, longitude = geocodeStation(canonicalLineKey, filters["station"])
         stationCoordinateCache[stationKey] = (latitude, longitude)
         saveStationCoordinateCache(stationCoordinateCache)
 
     return {
         **filters,
+        "line": canonicalLineKey,
         "latitude": latitude,
         "longitude": longitude,
     }
@@ -387,6 +390,20 @@ def fetchHotpepperVenues(filters):
 
 
 def geocodeStation(lineKey, stationName):
+    payload = searchStationCoordinates(buildStationQueryParts(lineKey, stationName))
+    if payload:
+        firstMatch = payload[0]
+        return float(firstMatch["lat"]), float(firstMatch["lon"])
+
+    fallbackPayload = searchStationCoordinates([stationName, "駅", "東京都"])
+    if fallbackPayload:
+        firstMatch = fallbackPayload[0]
+        return float(firstMatch["lat"]), float(firstMatch["lon"])
+
+    raise ValueError("station geocoding failed")
+
+
+def buildStationQueryParts(lineKey, stationName):
     queryParts = [stationName, "駅", "東京都"]
     if lineKey == "denentoshi":
         queryParts.append("東急田園都市線")
@@ -407,6 +424,10 @@ def geocodeStation(lineKey, stationName):
     elif lineKey == "odakyu":
         queryParts.append("小田急小田原線")
 
+    return queryParts
+
+
+def searchStationCoordinates(queryParts):
     requestQuery = urlencode(
         {
             "q": " ".join(queryParts),
@@ -424,13 +445,37 @@ def geocodeStation(lineKey, stationName):
     )
 
     with urlopen(request, timeout=12) as response:
-        payload = json.loads(response.read().decode("utf-8"))
+        return json.loads(response.read().decode("utf-8"))
 
-    if not payload:
-        raise ValueError("station geocoding failed")
 
-    firstMatch = payload[0]
-    return float(firstMatch["lat"]), float(firstMatch["lon"])
+def resolveStationLine(lineKey, stationName):
+    stationLines = loadStationLinesIndex().get(stationName, [])
+    if not stationLines:
+        return lineKey
+    if lineKey in stationLines:
+        return lineKey
+    return stationLines[0]
+
+
+def loadStationLinesIndex():
+    global stationLinesIndex
+    if stationLinesIndex is not None:
+        return stationLinesIndex
+
+    try:
+        rawPayload = STATIONS_PATH.read_text(encoding="utf-8")
+        payload = json.loads(rawPayload)
+    except (FileNotFoundError, json.JSONDecodeError):
+        stationLinesIndex = {}
+        return stationLinesIndex
+
+    indexedLines = {}
+    for lineKey, lineValue in payload.items():
+        for stationName in lineValue.get("stations", []):
+            indexedLines.setdefault(stationName, []).append(lineKey)
+
+    stationLinesIndex = indexedLines
+    return stationLinesIndex
 
 
 def reverseGeocodeLocation(latitude, longitude):
