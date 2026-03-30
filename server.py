@@ -388,6 +388,16 @@ def geocodeStation(lineKey, stationName):
         queryParts.append("東京メトロ銀座線")
     elif lineKey == "marunouchi":
         queryParts.append("東京メトロ丸ノ内線")
+    elif lineKey == "tozai":
+        queryParts.append("東京メトロ東西線")
+    elif lineKey == "namboku":
+        queryParts.append("東京メトロ南北線")
+    elif lineKey == "yurakucho":
+        queryParts.append("東京メトロ有楽町線")
+    elif lineKey == "oedo":
+        queryParts.append("都営大江戸線")
+    elif lineKey == "odakyu":
+        queryParts.append("小田急小田原線")
 
     requestQuery = urlencode(
         {
