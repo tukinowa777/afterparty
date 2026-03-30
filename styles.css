@@ -285,6 +285,10 @@ select {
   align-items: baseline;
 }
 
+.results-header[hidden] {
+  display: none !important;
+}
+
 .results-meta,
 #resultsMeta {
   color: #d4dce6;

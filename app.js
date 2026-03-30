@@ -153,6 +153,7 @@ const stationSelect = document.getElementById("stationSelect");
 const cuisineSelect = document.getElementById("cuisine");
 const distanceSelect = document.getElementById("distance");
 const openAfter21Checkbox = document.getElementById("openAfter21");
+const resultsHeader = document.getElementById("resultsHeader");
 const resultsMeta = document.getElementById("resultsMeta");
 const resultsList = document.getElementById("resultsList");
 const loadingIndicator = document.getElementById("loadingIndicator");
@@ -248,6 +249,7 @@ function buildSearchParams() {
 }
 
 function renderEmpty() {
+  resultsHeader.hidden = false;
   resultsMeta.textContent = "0件ヒット";
   resultsList.innerHTML = `
     <article class="empty">
@@ -263,6 +265,7 @@ function renderRecommendations() {
     return;
   }
 
+  resultsHeader.hidden = false;
   const searchOriginLabel = state.searchMode === "gps" ? "現在地" : `${state.location.label}`;
   resultsMeta.textContent = `${state.venues.length}件表示`;
   resultsList.innerHTML = state.venues
