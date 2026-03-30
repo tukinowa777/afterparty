@@ -249,14 +249,17 @@ function renderRecommendations() {
   resultsHeader.hidden = false;
   const searchOriginLabel = `${state.selectedStation}駅`;
   const pageSize = 3;
-  const pageCount = Math.ceil(state.venues.length / pageSize);
-  resultsPager.hidden = pageCount <= 1;
-  resultsMeta.textContent = buildResultsMetaText(0, pageSize);
-  resultsList.innerHTML = Array.from({ length: pageCount }, (_, pageIndex) => {
-    const startIndex = pageIndex * pageSize;
-    const visibleVenues = state.venues.slice(startIndex, startIndex + pageSize);
+  const resultPages = buildResultPages(pageSize);
+  resultsPager.hidden = resultPages.length <= 1;
+  resultsMeta.textContent = buildResultsMetaText(0, resultPages);
+  resultsList.innerHTML = resultPages.map((page, pageIndex) => {
+    const startIndex = page.startIndex;
+    const visibleVenues = page.venues;
     return `
       <section class="results-page" aria-label="${startIndex + 1}件目から${Math.min(startIndex + visibleVenues.length, state.venues.length)}件目">
+        <div class="results-page-header">
+          <p class="results-category">${page.categoryLabel}</p>
+        </div>
         ${visibleVenues
           .map(
             (venue, index) => `
@@ -292,17 +295,47 @@ function renderRecommendations() {
   }).join("");
   resultsList.scrollTo({ left: 0, behavior: "auto" });
   prevResultsButton.disabled = true;
-  nextResultsButton.disabled = pageCount <= 1;
+  nextResultsButton.disabled = resultPages.length <= 1;
 }
 
-function buildResultsMetaText(pageIndex, pageSize) {
+function buildResultsMetaText(pageIndex, resultPages) {
   if (state.venues.length === 0) {
     return "0件ヒット";
   }
 
-  const startIndex = pageIndex * pageSize + 1;
-  const endIndex = Math.min((pageIndex + 1) * pageSize, state.venues.length);
-  return `${startIndex}-${endIndex}件目 / 全${state.venues.length}件`;
+  const currentPage = resultPages[Math.min(pageIndex, resultPages.length - 1)];
+  const startIndex = currentPage.startIndex + 1;
+  const endIndex = currentPage.startIndex + currentPage.venues.length;
+  return `${currentPage.categoryLabel} ${startIndex}-${endIndex}件目 / 全${state.venues.length}件`;
+}
+
+function buildResultPages(pageSize) {
+  const groupedVenues = new Map();
+
+  state.venues.forEach((venue) => {
+    const primaryCuisine = venue.cuisines?.[0] || "japanese";
+    if (!groupedVenues.has(primaryCuisine)) {
+      groupedVenues.set(primaryCuisine, []);
+    }
+    groupedVenues.get(primaryCuisine).push(venue);
+  });
+
+  const resultPages = [];
+  let globalIndex = 0;
+
+  groupedVenues.forEach((venues, cuisineKey) => {
+    for (let index = 0; index < venues.length; index += pageSize) {
+      resultPages.push({
+        categoryKey: cuisineKey,
+        categoryLabel: cuisineLabels[cuisineKey] || "その他",
+        startIndex: globalIndex,
+        venues: venues.slice(index, index + pageSize),
+      });
+      globalIndex += Math.min(pageSize, venues.length - index);
+    }
+  });
+
+  return resultPages;
 }
 
 function updateSearchModeUi() {
@@ -417,7 +450,7 @@ function updateResultsPagerState() {
 
   const maxScrollLeft = Math.max(0, resultsList.scrollWidth - pageWidth);
   const currentPage = Math.round(resultsList.scrollLeft / pageWidth);
-  resultsMeta.textContent = buildResultsMetaText(currentPage, 3);
+  resultsMeta.textContent = buildResultsMetaText(currentPage, buildResultPages(3));
   prevResultsButton.disabled = resultsList.scrollLeft < 20;
   nextResultsButton.disabled = resultsList.scrollLeft >= maxScrollLeft - 20;
 }
