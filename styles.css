@@ -1,0 +1,313 @@
+:root {
+  --bg: #0f2238;
+  --panel: #f6efe4;
+  --panel-strong: #15324c;
+  --card: #ffffff;
+  --accent: #df5a12;
+  --accent-soft: #f1c48a;
+  --text: #13283f;
+  --subtle: #66768a;
+  --line: #d8dfe6;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: "Hiragino Sans", "Noto Sans JP", sans-serif;
+  background:
+    radial-gradient(circle at top right, rgba(241, 196, 138, 0.18), transparent 30%),
+    linear-gradient(180deg, #112944 0%, #0b1c2f 100%);
+  color: #fff;
+}
+
+.page {
+  width: min(1120px, calc(100% - 32px));
+  margin: 0 auto;
+  padding: 32px 0 48px;
+}
+
+.hero,
+.filters,
+.result-card,
+.empty {
+  border-radius: 28px;
+}
+
+.hero {
+  background: var(--panel-strong);
+  padding: 28px;
+  margin-bottom: 20px;
+}
+
+.eyebrow {
+  margin: 0 0 10px;
+  font-size: 12px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--accent-soft);
+  font-weight: 700;
+}
+
+h1 {
+  margin: 0;
+  font-size: clamp(2rem, 4vw, 3.7rem);
+  line-height: 1.08;
+}
+
+.lead {
+  max-width: 720px;
+  color: #d4dce6;
+  line-height: 1.7;
+}
+
+.location-card {
+  margin-top: 22px;
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: center;
+  background: var(--panel);
+  color: var(--text);
+  padding: 18px 20px;
+}
+
+.location-label,
+.location-note {
+  margin: 0;
+}
+
+.location-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: #835d24;
+}
+
+.location-value {
+  margin: 6px 0;
+  font-size: 1.45rem;
+  font-weight: 800;
+}
+
+.location-note {
+  color: var(--subtle);
+  line-height: 1.6;
+}
+
+.locate-button,
+.chip {
+  border: 0;
+  cursor: pointer;
+}
+
+.locate-button {
+  background: #fff;
+  color: var(--text);
+  padding: 12px 18px;
+  border-radius: 999px;
+  font-weight: 700;
+}
+
+.filters {
+  background: var(--panel);
+  padding: 24px;
+  color: var(--text);
+}
+
+.filters h2,
+.results h2 {
+  margin-top: 0;
+}
+
+.field {
+  display: block;
+  margin-top: 16px;
+}
+
+.field > span,
+.toggle span {
+  display: block;
+  font-weight: 700;
+  margin-bottom: 10px;
+}
+
+input[type="number"],
+select {
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 14px 16px;
+  font-size: 1rem;
+  background: #fff;
+}
+
+.chip-group {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.chip {
+  background: #fff;
+  color: var(--text);
+  border-radius: 999px;
+  padding: 11px 15px;
+  border: 1px solid var(--line);
+  font-weight: 600;
+}
+
+.chip.active {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+
+.toggle {
+  margin-top: 18px;
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: start;
+}
+
+.toggle p {
+  margin: 0;
+  color: var(--subtle);
+  line-height: 1.6;
+}
+
+.toggle input {
+  width: 22px;
+  height: 22px;
+  accent-color: var(--accent);
+  margin-top: 8px;
+}
+
+.results {
+  margin-top: 22px;
+}
+
+.results-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: baseline;
+}
+
+.results-meta,
+#resultsMeta {
+  color: #d4dce6;
+}
+
+.results-list {
+  display: grid;
+  gap: 14px;
+}
+
+.status-message {
+  margin: 0 0 12px;
+  color: #d4dce6;
+  line-height: 1.6;
+}
+
+.result-card {
+  background: var(--card);
+  color: var(--text);
+  padding: 18px;
+}
+
+.result-top {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+}
+
+.rank {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--accent);
+  color: #fff;
+  font-weight: 800;
+}
+
+.result-headline {
+  flex: 1;
+}
+
+.result-headline h3 {
+  margin: 0 0 4px;
+  font-size: 1.2rem;
+}
+
+.station {
+  margin: 0;
+  color: var(--subtle);
+}
+
+.price {
+  font-weight: 800;
+  color: #9a641f;
+}
+
+.meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 14px 0 10px;
+}
+
+.pill {
+  background: #edf2f7;
+  border-radius: 999px;
+  padding: 7px 10px;
+  font-size: 0.86rem;
+  font-weight: 700;
+}
+
+.genres {
+  margin: 0 0 8px;
+  font-weight: 700;
+}
+
+.features {
+  margin: 0;
+  color: var(--subtle);
+  line-height: 1.7;
+}
+
+.empty {
+  background: var(--panel);
+  color: var(--text);
+  padding: 24px;
+}
+
+@media (max-width: 720px) {
+  .page {
+    width: min(100% - 20px, 1120px);
+    padding-top: 18px;
+  }
+
+  .hero,
+  .filters,
+  .result-card,
+  .empty {
+    border-radius: 22px;
+  }
+
+  .location-card,
+  .toggle,
+  .results-header,
+  .result-top {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .locate-button {
+    width: 100%;
+  }
+}

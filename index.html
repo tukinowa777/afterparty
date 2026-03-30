@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#112944" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <title>二次会居酒屋ファインダー</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="page">
+      <section class="hero">
+        <p class="eyebrow">After Party Finder</p>
+        <h1>夜9時以降に入れる二次会向け居酒屋を、現在地から3件提案</h1>
+        <p class="lead">
+          現在地、予算、人数、料理ジャンル、移動距離で絞り込んで、遅い時間でも入りやすい店を提案します。
+        </p>
+
+        <div class="location-card">
+          <div>
+            <p class="location-label">検索の起点</p>
+            <p class="location-value" id="locationLabel">新宿駅周辺</p>
+            <p class="location-note" id="locationNote">
+              位置情報を取得すると、現在地に近い順でおすすめを再計算します。
+            </p>
+          </div>
+          <button id="locateButton" class="locate-button" type="button">現在地を使う</button>
+        </div>
+      </section>
+
+      <section class="filters">
+        <h2>条件を設定</h2>
+
+        <label class="field">
+          <span>人数</span>
+          <input id="partySize" type="number" min="1" value="4" />
+        </label>
+
+        <div class="field">
+          <span>予算</span>
+          <div class="chip-group" id="budgetGroup">
+            <button class="chip active" data-budget="low" type="button">3,000円前後まで</button>
+            <button class="chip" data-budget="mid" type="button">4,500円前後まで</button>
+            <button class="chip" data-budget="high" type="button">6,000円以上も可</button>
+          </div>
+        </div>
+
+        <label class="field">
+          <span>料理ジャンル</span>
+          <select id="cuisine">
+            <option value="any">なんでも</option>
+            <option value="yakitori">焼き鳥</option>
+            <option value="seafood">海鮮</option>
+            <option value="japanese">和食</option>
+            <option value="korean">韓国料理</option>
+            <option value="creative">創作系</option>
+            <option value="meat">肉系</option>
+          </select>
+        </label>
+
+        <label class="field">
+          <span>移動距離</span>
+          <select id="distance">
+            <option value="1000">1km以内</option>
+            <option value="2500" selected>2.5km以内</option>
+            <option value="5000">5km以内</option>
+          </select>
+        </label>
+
+        <label class="toggle">
+          <div>
+            <span>夜9時以降も営業</span>
+            <p>二次会向けに、21:00以降でも入れる店だけを残します。</p>
+          </div>
+          <input id="openAfter21" type="checkbox" checked />
+        </label>
+      </section>
+
+      <section class="results">
+        <div class="results-header">
+          <h2>おすすめ3件</h2>
+          <p id="resultsMeta">3件ヒット</p>
+        </div>
+        <p id="statusMessage" class="status-message" hidden></p>
+        <div id="resultsList" class="results-list"></div>
+      </section>
+    </main>
+
+    <script src="./app.js"></script>
+  </body>
+  </html>
