@@ -407,19 +407,48 @@ def fetchHotpepperVenues(filters):
         raise ValueError("hotpepper api key is missing")
 
     resolvedFilters = resolveSearchOrigin(filters)
-    budgetCodes = mapHotpepperBudgetCodes(filters["maxBudget"])
+    filteredVenues = loadHotpepperCandidates(
+        resolvedFilters,
+        filters["maxBudget"],
+        mapHotpepperRange(filters["maxDistanceMeters"]),
+        "30",
+        True,
+    )
+    if not filteredVenues and resolvedFilters["searchMode"] == "station":
+        filteredVenues = loadHotpepperCandidates(
+            resolvedFilters,
+            filters["maxBudget"],
+            "5",
+            "100",
+            False,
+        )
+    filteredVenues = enrichWalkingMetrics(filteredVenues, resolvedFilters)
+    filteredVenues = limitStationWalkTime(filteredVenues, resolvedFilters)
+    filteredVenues.sort(
+        key=lambda venue: (
+            round(venue["distanceMeters"]),
+            venue["walkMinutes"],
+            -venue["openUntilHour"],
+            venue["name"],
+        )
+    )
+    return filteredVenues, resolvedFilters
+
+
+def loadHotpepperCandidates(resolvedFilters, maxBudget, rangeCode, count, includeBudget):
     requestParams = [
         ("key", HOTPEPPER_API_KEY),
         ("format", "json"),
         ("lat", f'{resolvedFilters["latitude"]:.6f}'),
         ("lng", f'{resolvedFilters["longitude"]:.6f}'),
-        ("range", mapHotpepperRange(filters["maxDistanceMeters"])),
-        ("count", "30"),
+        ("range", rangeCode),
+        ("count", count),
         ("order", "4"),
     ]
 
-    for budgetCode in budgetCodes:
-        requestParams.append(("budget", budgetCode))
+    if includeBudget:
+        for budgetCode in mapHotpepperBudgetCodes(maxBudget):
+            requestParams.append(("budget", budgetCode))
 
     request = Request(
         f"{HOTPEPPER_GOURMET_API_URL}?{urlencode(requestParams)}",
@@ -443,18 +472,7 @@ def fetchHotpepperVenues(filters):
     if resolvedFilters["searchMode"] == "station":
         normalizedVenues = applyHotpepperStationGuides(normalizedVenues, resolvedFilters["station"])
 
-    filteredVenues = filterVenues(normalizedVenues, resolvedFilters)
-    filteredVenues = enrichWalkingMetrics(filteredVenues, resolvedFilters)
-    filteredVenues = limitStationWalkTime(filteredVenues, resolvedFilters)
-    filteredVenues.sort(
-        key=lambda venue: (
-            round(venue["distanceMeters"]),
-            venue["walkMinutes"],
-            -venue["openUntilHour"],
-            venue["name"],
-        )
-    )
-    return filteredVenues, resolvedFilters
+    return filterVenues(normalizedVenues, resolvedFilters)
 
 
 def geocodeStation(lineKey, stationName):
@@ -817,29 +835,44 @@ def extractStationWalkMinutes(stationName, accessText, listedStationName=""):
     normalizedAccessText = normalizeAccessText(accessText)
 
     for candidateName in candidateNames:
-        candidatePattern = re.escape(candidateName)
-        matched = re.search(rf"{candidatePattern}駅[^。]*?徒歩(?:約)?(\d+)分", normalizedAccessText)
+        stationPattern = buildStationMentionPattern(candidateName)
+        matched = re.search(rf"{stationPattern}[^。]*?徒歩(?:約)?(\d+)分", normalizedAccessText)
         if matched:
             return int(matched.group(1))
 
     for candidateName in candidateNames:
-        candidatePattern = re.escape(candidateName)
-        matched = re.search(rf"徒歩(?:約)?(\d+)分[^。]*?{candidatePattern}駅", normalizedAccessText)
+        stationPattern = buildStationMentionPattern(candidateName)
+        matched = re.search(rf"徒歩(?:約)?(\d+)分[^。]*?{stationPattern}", normalizedAccessText)
         if matched:
             return int(matched.group(1))
 
     genericMatch = re.search(r"徒歩(?:約)?(\d+)分", normalizedAccessText)
-    if genericMatch and any(candidateName in normalizedAccessText for candidateName in candidateNames):
+    if genericMatch and any(
+        re.search(buildStationMentionPattern(candidateName), normalizedAccessText)
+        for candidateName in candidateNames
+    ):
         return int(genericMatch.group(1))
 
-    if any(candidateName in normalizedAccessText and "直通" in normalizedAccessText for candidateName in candidateNames):
+    if any(
+        re.search(buildStationMentionPattern(candidateName), normalizedAccessText)
+        and "直通" in normalizedAccessText
+        for candidateName in candidateNames
+    ):
         return 1
 
-    if any(candidateName in normalizedAccessText and keyword in normalizedAccessText for candidateName in candidateNames for keyword in ["駅近", "駅ちか", "駅スグ", "駅すぐ", "すぐ", "目の前"]):
+    if any(
+        re.search(buildStationMentionPattern(candidateName), normalizedAccessText)
+        and keyword in normalizedAccessText
+        for candidateName in candidateNames
+        for keyword in ["駅近", "駅ちか", "駅スグ", "駅すぐ", "すぐ", "目の前"]
+    ):
         return 3
 
     if "/" in normalizedAccessText or "・" in normalizedAccessText:
-        if any(candidateName in normalizedAccessText for candidateName in candidateNames):
+        if any(
+            re.search(buildStationMentionPattern(candidateName), normalizedAccessText)
+            for candidateName in candidateNames
+        ):
             return 10
 
     return None
@@ -847,7 +880,7 @@ def extractStationWalkMinutes(stationName, accessText, listedStationName=""):
 
 def buildStationAccessCandidates(stationName, listedStationName):
     candidateNames = []
-    for name in [stationName, listedStationName]:
+    for name in [stationName]:
         if name and name not in candidateNames:
             candidateNames.append(name)
 
@@ -855,11 +888,26 @@ def buildStationAccessCandidates(stationName, listedStationName):
         if aliasName not in candidateNames:
             candidateNames.append(aliasName)
 
+    normalizedListedStation = normalizeStationName(listedStationName)
+    if normalizedListedStation and normalizedListedStation in candidateNames:
+        candidateNames.append(normalizedListedStation)
+
     return candidateNames
 
 
 def normalizeAccessText(accessText):
     return str(accessText).replace("　", " ").replace("／", "/")
+
+
+def normalizeStationName(stationName):
+    normalizedName = str(stationName).strip()
+    if normalizedName.endswith("駅"):
+        normalizedName = normalizedName[:-1]
+    return normalizedName
+
+
+def buildStationMentionPattern(candidateName):
+    return rf"{re.escape(candidateName)}駅"
 
 
 def fetchHotpepperGuideText(shopId):
