@@ -240,14 +240,13 @@ select {
 }
 
 .results-page-header {
-  display: block;
+  display: flex;
+  align-items: flex-start;
 }
 
 .results-category {
   margin: 0;
-  display: inline-flex;
-  align-items: center;
-  width: fit-content;
+  display: inline-block;
   max-width: 100%;
   min-height: 28px;
   padding: 0 10px;
@@ -256,6 +255,7 @@ select {
   color: #fff3d9;
   font-size: 0.8rem;
   font-weight: 800;
+  line-height: 28px;
 }
 
 .pager-button {
@@ -389,14 +389,14 @@ select {
 .pill {
   background: #edf2f7;
   border-radius: 999px;
-  display: inline-flex;
-  align-items: center;
+  display: inline-block;
   justify-self: start;
-  width: fit-content;
+  width: auto;
   padding: 6px 9px;
   font-size: 0.76rem;
   font-weight: 700;
   max-width: 100%;
+  line-height: 1.3;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -404,8 +404,22 @@ select {
 
 .genres {
   margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: flex-start;
+}
+
+.genre-chip {
+  display: inline-block;
+  max-width: 100%;
+  padding: 5px 9px;
+  border-radius: 999px;
+  background: #f7f1e8;
+  color: #6d4b1f;
   font-weight: 700;
-  font-size: 0.88rem;
+  font-size: 0.8rem;
+  line-height: 1.2;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -556,7 +570,11 @@ select {
   }
 
   .genres {
-    font-size: 0.84rem;
+    gap: 5px;
+  }
+
+  .genre-chip {
+    font-size: 0.76rem;
   }
 
   .features {
