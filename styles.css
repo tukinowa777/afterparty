@@ -212,6 +212,7 @@ select {
 
 .results-list {
   display: flex;
+  align-items: flex-start;
   gap: 16px;
   overflow-x: auto;
   scroll-snap-type: x mandatory;
@@ -236,6 +237,9 @@ select {
   min-width: 100%;
   display: grid;
   gap: 8px;
+  align-content: start;
+  align-self: start;
+  height: auto;
   scroll-snap-align: start;
 }
 
