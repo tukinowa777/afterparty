@@ -51,7 +51,8 @@
   公開URLは `https://161.33.151.114/`
   ローカルAPIは `127.0.0.1:8123`
   実行時は `HOTPEPPER_API_KEY` を付けて `server.py` を起動する
-- Git の `remote` は未設定のため、push はまだ未実施
+- GitHub `origin` は `https://github.com/tukinowa777/afterparty.git`
+- 最新コミットは GitHub `master` まで push 済み
 - 未追跡ファイルとして `AGENTS.md`、`certs/`、`tmp/` があるが、現時点ではコミット対象外
 
 ## 次にやること
