@@ -166,9 +166,9 @@ function normalizeCuisineKey(cuisineKey) {
 }
 
 function formatBudget(priceRange) {
-  if (priceRange === "low") return "¥";
-  if (priceRange === "mid") return "¥¥";
-  return "¥¥¥";
+  if (priceRange === "low") return "3千円前後";
+  if (priceRange === "mid") return "5千円前後";
+  return "7千円前後";
 }
 
 function formatHour(hour) {
@@ -342,10 +342,11 @@ function buildResultPages(pageSize) {
   let globalIndex = 0;
 
   groupedVenues.forEach((venues, cuisineKey) => {
+    const categoryKey = selectedCuisine || normalizeCuisineKey(cuisineKey);
     for (let index = 0; index < venues.length; index += pageSize) {
       resultPages.push({
-        categoryKey: cuisineKey,
-        categoryLabel: cuisineLabels[cuisineKey] || "その他",
+        categoryKey,
+        categoryLabel: cuisineLabels[categoryKey] || "和食",
         startIndex: globalIndex,
         venues: venues.slice(index, index + pageSize),
       });
