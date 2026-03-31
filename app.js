@@ -274,9 +274,6 @@ function renderRecommendations() {
     const visibleVenues = page.venues;
     return `
       <section class="results-page" aria-label="${startIndex + 1}件目から${Math.min(startIndex + visibleVenues.length, state.venues.length)}件目">
-        <div class="results-page-header">
-          <p class="results-category">${page.categoryLabel}</p>
-        </div>
         ${visibleVenues
           .map(
             (venue, index) => {

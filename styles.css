@@ -243,25 +243,6 @@ select {
   scroll-snap-align: start;
 }
 
-.results-page-header {
-  display: flex;
-  align-items: flex-start;
-}
-
-.results-category {
-  margin: 0;
-  display: inline-block;
-  max-width: 100%;
-  min-height: 28px;
-  padding: 0 10px;
-  border-radius: 999px;
-  background: rgba(241, 196, 138, 0.18);
-  color: #fff3d9;
-  font-size: 0.8rem;
-  font-weight: 800;
-  line-height: 28px;
-}
-
 .pager-button {
   border: 1px solid rgba(255, 255, 255, 0.18);
   background: rgba(255, 255, 255, 0.08);
@@ -597,8 +578,4 @@ select {
     gap: 8px;
   }
 
-  .results-category {
-    min-height: 24px;
-    font-size: 0.76rem;
-  }
 }
