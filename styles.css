@@ -324,6 +324,9 @@ select {
   color: var(--text);
   padding: 14px 15px;
   overflow: hidden;
+  display: grid;
+  gap: 8px;
+  align-content: start;
 }
 
 .result-top {
@@ -379,7 +382,7 @@ select {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
-  margin: 10px 0 8px;
+  margin: 0;
 }
 
 .pill {
@@ -395,9 +398,12 @@ select {
 }
 
 .genres {
-  margin: 0 0 6px;
+  margin: 0;
   font-weight: 700;
   font-size: 0.88rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .features {
@@ -406,16 +412,16 @@ select {
   line-height: 1.45;
   font-size: 0.84rem;
   display: -webkit-box;
-  -webkit-line-clamp: 2;
+  -webkit-line-clamp: 1;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
 
 .result-actions {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
-  margin-top: 10px;
+  margin-top: 2px;
 }
 
 .action-link {
@@ -428,6 +434,9 @@ select {
   text-decoration: none;
   font-weight: 700;
   font-size: 0.85rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .action-link.primary {
@@ -492,6 +501,7 @@ select {
 
   .result-card {
     padding: 12px 13px;
+    gap: 7px;
   }
 
   .result-top {
@@ -549,10 +559,10 @@ select {
   }
 
   .action-link {
-    flex: 1 1 calc(50% - 4px);
     min-height: 38px;
     text-align: center;
     min-width: 0;
+    font-size: 0.8rem;
   }
 
   .results-page {

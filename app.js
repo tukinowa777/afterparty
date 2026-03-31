@@ -295,7 +295,7 @@ function renderRecommendations() {
           <span class="pill">${venue.smokingLabel || "要確認"}</span>
         </div>
         <p class="genres">${venue.cuisines.map((item) => cuisineLabels[item]).join(" / ")}</p>
-        <p class="features">${venue.features.slice(0, 2).join(" • ")}</p>
+        <p class="features">${venue.features.slice(0, 1).join(" • ")}</p>
         <div class="result-actions">
           <a class="action-link primary" href="${buildMapLink(venue)}" target="_blank" rel="noreferrer">地図で開く</a>
           <a class="action-link secondary" href="${
