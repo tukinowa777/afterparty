@@ -738,11 +738,6 @@ def normalizeHotpepperVenue(shop):
     if any(
         keyword in joinedGenres
         for keyword in [
-            "フレンチ",
-            "イタリアン",
-            "ビストロ",
-            "スペイン",
-            "各国料理",
             "カフェ",
             "カレー",
             "ラーメン",
@@ -751,10 +746,6 @@ def normalizeHotpepperVenue(shop):
             "アジア・エスニック料理",
             "その他グルメ",
             "お好み焼き・もんじゃ",
-            "韓国料理",
-            "中華",
-            "焼肉・ホルモン",
-            "洋食",
         ]
     ):
         return None
@@ -765,6 +756,17 @@ def normalizeHotpepperVenue(shop):
             "和風",
             "焼き鳥",
             "鶏料理",
+            "焼肉",
+            "ホルモン",
+            "中華",
+            "餃子",
+            "四川",
+            "台湾",
+            "小籠包",
+            "韓国",
+            "韓国料理",
+            "洋食",
+            "イタリアン",
             "酒場",
             "バー",
             "BAR",
@@ -789,7 +791,7 @@ def normalizeHotpepperVenue(shop):
         ]
     ):
         return None
-    cuisineKeys = normalizeHotpepperCuisines(genreNames)
+    cuisineKeys = normalizeHotpepperCuisines(genreNames, shop.get("name", ""))
     openInfo = normalizeHotpepperOpenInfo(shop.get("open", ""), shop.get("midnight", ""))
     features = buildHotpepperFeatures(shop)
 
@@ -883,11 +885,11 @@ def applyHotpepperStationGuides(venues, targetStationName):
     return venues
 
 
-def normalizeHotpepperCuisines(genreNames):
-    joinedNames = " ".join(genreNames)
+def normalizeHotpepperCuisines(genreNames, shopName=""):
+    joinedNames = f'{" ".join(genreNames)} {shopName}'
     cuisineKeys = []
 
-    if any(keyword in joinedNames for keyword in ["焼き鳥", "鶏料理"]):
+    if any(keyword in joinedNames for keyword in ["焼き鳥", "焼鳥", "やきとり", "鶏料理"]):
         cuisineKeys.append("yakitori")
     if any(keyword in joinedNames for keyword in ["焼肉", "ホルモン", "ステーキ"]):
         cuisineKeys.append("yakiniku")
