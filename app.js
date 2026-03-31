@@ -165,12 +165,6 @@ function normalizeCuisineKey(cuisineKey) {
   return cuisineAliases[cuisineKey] || "japanese";
 }
 
-function formatBudget(priceRange) {
-  if (priceRange === "low") return "3千円前後";
-  if (priceRange === "mid") return "5千円前後";
-  return "7千円前後";
-}
-
 function formatHour(hour) {
   if (hour === 24) return "24:00";
   if (hour > 24) return `${String(hour - 24).padStart(2, "0")}:00`;
@@ -292,7 +286,6 @@ function renderRecommendations() {
             <h3>${venue.name}</h3>
             <p class="station">${searchOriginLabel}から徒歩${venue.walkMinutes}分</p>
           </div>
-          <div class="price">${formatBudget(venue.priceRange)}</div>
         </div>
         <div class="meta">
           <span class="pill">徒歩${venue.walkMinutes}分</span>
