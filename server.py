@@ -886,15 +886,18 @@ def applyHotpepperStationGuides(venues, targetStationName):
 def normalizeHotpepperCuisines(genreNames):
     joinedNames = " ".join(genreNames)
     cuisineKeys = []
-    if "焼き鳥" in joinedNames:
+
+    if any(keyword in joinedNames for keyword in ["焼き鳥", "鶏料理"]):
         cuisineKeys.append("yakitori")
-    if "海鮮" in joinedNames or "魚" in joinedNames:
-        cuisineKeys.append("seafood")
-    if "韓国" in joinedNames:
+    if any(keyword in joinedNames for keyword in ["焼肉", "ホルモン", "ステーキ"]):
+        cuisineKeys.append("yakiniku")
+    if any(keyword in joinedNames for keyword in ["韓国", "韓国料理"]):
         cuisineKeys.append("korean")
-    if "肉" in joinedNames or "焼肉" in joinedNames or "ステーキ" in joinedNames:
-        cuisineKeys.append("meat")
-    if "創作" in joinedNames or "ダイニング" in joinedNames or "イタリアン" in joinedNames:
+    if any(keyword in joinedNames for keyword in ["中華", "餃子", "四川", "台湾", "小籠包"]):
+        cuisineKeys.append("chinese")
+    if any(keyword in joinedNames for keyword in ["洋食", "フレンチ", "イタリアン", "スペイン", "ビストロ"]):
+        cuisineKeys.append("western")
+    if any(keyword in joinedNames for keyword in ["創作", "ダイニング"]):
         cuisineKeys.append("creative")
     if not cuisineKeys:
         cuisineKeys.append("japanese")
@@ -1193,14 +1196,21 @@ def normalizeCuisines(rawCuisine):
     cuisineMapping = {
         "japanese": "japanese",
         "izakaya": "japanese",
+        "regional": "japanese",
         "yakitori": "yakitori",
         "chicken": "yakitori",
-        "seafood": "seafood",
-        "fish": "seafood",
+        "chinese": "chinese",
+        "noodle": "chinese",
+        "dumplings": "chinese",
+        "western": "western",
+        "italian": "western",
+        "french": "western",
         "korean": "korean",
-        "bbq": "meat",
-        "steak_house": "meat",
-        "burger": "meat",
+        "bbq": "yakiniku",
+        "steak_house": "yakiniku",
+        "burger": "western",
+        "fusion": "creative",
+        "asian": "creative",
     }
     normalizedKeys = []
 

@@ -1,10 +1,11 @@
 const cuisineLabels = {
+  chinese: "中華",
+  western: "洋食",
   yakitori: "焼き鳥",
-  seafood: "海鮮",
   japanese: "和食",
+  yakiniku: "焼肉",
   korean: "韓国料理",
-  creative: "創作系",
-  meat: "肉系",
+  creative: "創作",
 };
 
 const fallbackVenues = [
@@ -33,7 +34,7 @@ const fallbackVenues = [
     priceRange: "mid",
     minPartySize: 2,
     maxPartySize: 16,
-    cuisines: ["seafood", "japanese"],
+    cuisines: ["japanese"],
     features: ["刺身盛り", "半個室", "終電前後でも入りやすい"],
   },
   {
@@ -47,7 +48,7 @@ const fallbackVenues = [
     priceRange: "mid",
     minPartySize: 3,
     maxPartySize: 12,
-    cuisines: ["korean", "meat"],
+    cuisines: ["korean"],
     features: ["サムギョプサル", "遅い時間の注文に強い", "テーブル席中心"],
   },
   {
@@ -61,7 +62,7 @@ const fallbackVenues = [
     priceRange: "high",
     minPartySize: 2,
     maxPartySize: 10,
-    cuisines: ["creative", "japanese"],
+    cuisines: ["creative"],
     features: ["クラフトサワー", "落ち着いた照明", "デート利用向け"],
   },
   {
@@ -75,7 +76,7 @@ const fallbackVenues = [
     priceRange: "low",
     minPartySize: 2,
     maxPartySize: 20,
-    cuisines: ["meat", "creative"],
+    cuisines: ["yakiniku"],
     features: ["大人数OK", "飲み放題あり", "深夜2時以降も営業"],
   },
   {
@@ -89,7 +90,7 @@ const fallbackVenues = [
     priceRange: "low",
     minPartySize: 2,
     maxPartySize: 14,
-    cuisines: ["japanese", "seafood"],
+    cuisines: ["japanese"],
     features: ["コスパ重視", "串揚げあり", "にぎやか"],
   },
   {
@@ -103,7 +104,7 @@ const fallbackVenues = [
     priceRange: "mid",
     minPartySize: 2,
     maxPartySize: 10,
-    cuisines: ["yakitori", "meat"],
+    cuisines: ["yakitori"],
     features: ["炭火焼", "半地下の隠れ家感", "二次会セットあり"],
   },
   {
@@ -117,7 +118,7 @@ const fallbackVenues = [
     priceRange: "high",
     minPartySize: 2,
     maxPartySize: 6,
-    cuisines: ["creative", "seafood"],
+    cuisines: ["creative"],
     features: ["日本酒が豊富", "静かめ", "少人数向け"],
   },
 ];
