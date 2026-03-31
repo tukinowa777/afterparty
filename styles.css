@@ -326,7 +326,7 @@ select {
   padding: 14px 15px;
   overflow: hidden;
   display: grid;
-  gap: 8px;
+  gap: 6px;
   align-content: start;
 }
 
@@ -404,10 +404,11 @@ select {
 
 .genres {
   margin: 0;
-  display: flex;
+  display: inline-flex;
   flex-wrap: wrap;
   gap: 6px;
   align-items: flex-start;
+  justify-self: start;
 }
 
 .genre-chip {
@@ -428,7 +429,7 @@ select {
 .features {
   margin: 0;
   color: var(--subtle);
-  line-height: 1.45;
+  line-height: 1.35;
   font-size: 0.84rem;
   display: -webkit-box;
   -webkit-line-clamp: 1;
@@ -520,7 +521,7 @@ select {
 
   .result-card {
     padding: 12px 13px;
-    gap: 7px;
+    gap: 6px;
   }
 
   .result-top {

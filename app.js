@@ -279,7 +279,15 @@ function renderRecommendations() {
         </div>
         ${visibleVenues
           .map(
-            (venue, index) => `
+            (venue, index) => {
+              const genreChips = (venue.cuisines || [])
+                .map((item) => cuisineLabels[item])
+                .filter(Boolean)
+                .map((label) => `<span class="genre-chip">${label}</span>`)
+                .join("");
+              const featureText = venue.features.slice(0, 1).join(" • ");
+
+              return `
       <article class="result-card">
         <div class="result-top">
           <div class="rank">${startIndex + index + 1}</div>
@@ -294,8 +302,8 @@ function renderRecommendations() {
           <span class="pill">${formatBusinessHours(venue)}</span>
           <span class="pill">${venue.smokingLabel || "要確認"}</span>
         </div>
-        <div class="genres">${venue.cuisines.map((item) => `<span class="genre-chip">${cuisineLabels[item]}</span>`).join("")}</div>
-        <p class="features">${venue.features.slice(0, 1).join(" • ")}</p>
+        ${genreChips ? `<div class="genres">${genreChips}</div>` : ""}
+        ${featureText ? `<p class="features">${featureText}</p>` : ""}
         <div class="result-actions">
           <a class="action-link primary" href="${buildMapLink(venue)}" target="_blank" rel="noreferrer">地図で開く</a>
           <a class="action-link secondary" href="${
@@ -304,7 +312,8 @@ function renderRecommendations() {
           }" target="_blank" rel="noreferrer">ホットペッパーでみる</a>
         </div>
       </article>
-    `
+    `;
+            }
           )
           .join("")}
       </section>
