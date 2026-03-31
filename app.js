@@ -329,36 +329,17 @@ function buildResultsMetaText(pageIndex, resultPages) {
   const currentPage = resultPages[Math.min(pageIndex, resultPages.length - 1)];
   const startIndex = currentPage.startIndex + 1;
   const endIndex = currentPage.startIndex + currentPage.venues.length;
-  return `${currentPage.categoryLabel} ${startIndex}-${endIndex}件目 / 全${state.venues.length}件`;
+  return `${startIndex}-${endIndex}件目 / 全${state.venues.length}件`;
 }
 
 function buildResultPages(pageSize) {
-  const groupedVenues = new Map();
-  const selectedCuisine = cuisineSelect.value !== "any" ? normalizeCuisineKey(cuisineSelect.value) : null;
-
-  state.venues.forEach((venue) => {
-    const primaryCuisine = selectedCuisine || normalizeCuisineKey(venue.cuisines?.[0]);
-    if (!groupedVenues.has(primaryCuisine)) {
-      groupedVenues.set(primaryCuisine, []);
-    }
-    groupedVenues.get(primaryCuisine).push(venue);
-  });
-
   const resultPages = [];
-  let globalIndex = 0;
-
-  groupedVenues.forEach((venues, cuisineKey) => {
-    const categoryKey = selectedCuisine || normalizeCuisineKey(cuisineKey);
-    for (let index = 0; index < venues.length; index += pageSize) {
-      resultPages.push({
-        categoryKey,
-        categoryLabel: cuisineLabels[categoryKey] || "和食",
-        startIndex: globalIndex,
-        venues: venues.slice(index, index + pageSize),
-      });
-      globalIndex += Math.min(pageSize, venues.length - index);
-    }
-  });
+  for (let index = 0; index < state.venues.length; index += pageSize) {
+    resultPages.push({
+      startIndex: index,
+      venues: state.venues.slice(index, index + pageSize),
+    });
+  }
 
   return resultPages;
 }
