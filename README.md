@@ -36,6 +36,61 @@
 - OpenStreetMap / Overpass の無料データ取得に対応し、失敗時はサンプルデータへフォールバック
 - DB、認証、予約 API 連携は未実装
 
+## システム仕様
+
+### 使用言語
+
+- フロントエンド: `HTML / CSS / JavaScript`
+- バックエンド: `Python 3`
+
+### 使用ライブラリ / 実装方式
+
+- フロントエンド:
+  外部フレームワークは未使用。ブラウザ標準 API と素の JavaScript で実装
+- バックエンド:
+  Python 標準ライブラリのみで実装
+  - `http.server`: 静的配信と簡易 API
+  - `socketserver`: ローカル HTTP サーバー
+  - `urllib.request`: 外部 API / ページ取得
+  - `json`, `re`, `ssl`, `argparse` など: データ処理と起動制御
+
+### 利用中の外部サービス
+
+- `ホットペッパーグルメ Webサービス`
+  駅名キーワード検索で店舗候補を取得
+- `ホットペッパー店舗ページ`
+  `道案内`、`禁煙・喫煙`、`喫煙専用室` の補完に使用
+- `Google Maps`
+  `地図で開く` の外部リンク先として利用
+- `OpenStreetMap / Overpass / Nominatim / OSRM`
+  過去実装およびフォールバック用コードとして一部保持
+
+### データソースの現状
+
+- 第一候補:
+  `ホットペッパーグルメ`
+- 補完:
+  各店舗ページの HTML 情報
+- フォールバック:
+  `data/venues.json` の内蔵サンプルデータ
+
+### アーキテクチャ概要
+
+- `index.html`
+  画面構造
+- `styles.css`
+  レイアウトとレスポンシブ表示
+- `app.js`
+  条件入力、API 呼び出し、検索結果描画
+- `server.py`
+  静的配信、`/api/stations`、`/api/venues` の提供、ホットペッパー連携
+- `data/stations.json`
+  路線と駅一覧
+- `data/station_coordinates.json`
+  駅座標のキャッシュ
+- `data/venues.json`
+  フォールバック用店舗データ
+
 ## 構成
 
 - `index.html`: 画面構造
