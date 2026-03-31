@@ -235,7 +235,7 @@ select {
   flex: 0 0 100%;
   min-width: 100%;
   display: grid;
-  gap: 14px;
+  gap: 8px;
   scroll-snap-align: start;
 }
 
@@ -323,10 +323,10 @@ select {
 .result-card {
   background: var(--card);
   color: var(--text);
-  padding: 14px 15px;
+  padding: 12px 14px;
   overflow: hidden;
   display: grid;
-  gap: 6px;
+  gap: 4px;
   align-content: start;
 }
 
@@ -382,7 +382,7 @@ select {
 .meta {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: 5px;
   margin: 0;
 }
 
@@ -406,7 +406,7 @@ select {
   margin: 0;
   display: inline-flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: 5px;
   align-items: flex-start;
   justify-self: start;
 }
@@ -440,8 +440,8 @@ select {
 .result-actions {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px;
-  margin-top: 2px;
+  gap: 6px;
+  margin-top: 0;
 }
 
 .action-link {
@@ -520,8 +520,8 @@ select {
   }
 
   .result-card {
-    padding: 12px 13px;
-    gap: 6px;
+    padding: 11px 12px;
+    gap: 4px;
   }
 
   .result-top {
@@ -590,7 +590,7 @@ select {
   }
 
   .results-page {
-    gap: 10px;
+    gap: 8px;
   }
 
   .results-category {
