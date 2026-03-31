@@ -152,6 +152,19 @@ const stationFields = document.getElementById("stationFields");
 const statusMessage = document.getElementById("statusMessage");
 const sourceNote = document.getElementById("sourceNote");
 
+function normalizeCuisineKey(cuisineKey) {
+  const cuisineAliases = {
+    seafood: "japanese",
+    meat: "yakiniku",
+  };
+
+  if (cuisineLabels[cuisineKey]) {
+    return cuisineKey;
+  }
+
+  return cuisineAliases[cuisineKey] || "japanese";
+}
+
 function formatBudget(priceRange) {
   if (priceRange === "low") return "¥";
   if (priceRange === "mid") return "¥¥";
@@ -315,9 +328,10 @@ function buildResultsMetaText(pageIndex, resultPages) {
 
 function buildResultPages(pageSize) {
   const groupedVenues = new Map();
+  const selectedCuisine = cuisineSelect.value !== "any" ? normalizeCuisineKey(cuisineSelect.value) : null;
 
   state.venues.forEach((venue) => {
-    const primaryCuisine = venue.cuisines?.[0] || "japanese";
+    const primaryCuisine = selectedCuisine || normalizeCuisineKey(venue.cuisines?.[0]);
     if (!groupedVenues.has(primaryCuisine)) {
       groupedVenues.set(primaryCuisine, []);
     }
