@@ -23,6 +23,22 @@ body {
   color: #fff;
 }
 
+#connection-status {
+  text-align: center;
+  padding: 6px 12px;
+  font-size: 12px;
+}
+
+.conn-secure {
+  background: #f0fff4;
+  color: #276749;
+}
+
+.conn-insecure {
+  background: #fff8e1;
+  color: #856404;
+}
+
 .page {
   width: min(1120px, calc(100% - 32px));
   margin: 0 auto;
@@ -85,6 +101,34 @@ h1 {
   border-radius: 999px;
   font-size: 1rem;
   font-weight: 800;
+}
+
+#geo-error-box {
+  margin: 12px 0;
+  padding: 12px 14px;
+  background: #fff3f3;
+  border: 1px solid #f5a0a0;
+  border-radius: 8px;
+}
+
+.geo-error-title {
+  margin: 0 0 6px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #c0392b;
+}
+
+.geo-error-detail {
+  margin: 0 0 6px;
+  font-size: 13px;
+  color: #555;
+  line-height: 1.6;
+}
+
+.geo-error-hint {
+  margin: 0;
+  font-size: 12px;
+  color: #888;
 }
 
 .filters {

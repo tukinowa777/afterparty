@@ -160,6 +160,21 @@ const stationFields = document.getElementById("stationFields");
 const statusMessage = document.getElementById("statusMessage");
 const sourceNote = document.getElementById("sourceNote");
 
+(function checkConnectionStatus() {
+  const element = document.getElementById("connection-status");
+  if (!element) {
+    return;
+  }
+
+  if (window.isSecureContext) {
+    element.textContent = "🔒 HTTPS接続（現在地検索が使えます）";
+    element.className = "conn-secure";
+  } else {
+    element.textContent = "⚠️ HTTP接続（現在地検索は使えません。駅検索をご利用ください）";
+    element.className = "conn-insecure";
+  }
+})();
+
 function normalizeCuisineKey(cuisineKey) {
   const cuisineAliases = {
     seafood: "japanese",
@@ -225,6 +240,62 @@ function setSourceNote(message) {
 
   sourceNote.hidden = false;
   sourceNote.textContent = message;
+}
+
+function showGeolocationError(message, detail) {
+  const existing = document.getElementById("geo-error-box");
+  if (existing) {
+    existing.remove();
+  }
+
+  const box = document.createElement("div");
+  box.id = "geo-error-box";
+  box.innerHTML = `
+    <p class="geo-error-title">⚠️ ${message}</p>
+    <p class="geo-error-detail">${detail}</p>
+    <p class="geo-error-hint">当面は「駅から検索」をご利用ください。</p>
+  `;
+
+  if (gpsSearchButton && gpsSearchButton.parentNode) {
+    gpsSearchButton.parentNode.insertBefore(box, gpsSearchButton.nextSibling);
+    return;
+  }
+
+  document.body.appendChild(box);
+}
+
+function handleGeolocationError(error) {
+  let message = "";
+  let detail = "";
+
+  if (!window.isSecureContext) {
+    message = "安全でない接続のため、位置情報を取得できません。";
+    detail =
+      "HTTPSで接続しているか確認してください。現在のURLが https:// で始まっていない場合、ブラウザは位置情報の取得を許可しません。";
+  } else {
+    switch (error.code) {
+      case error.PERMISSION_DENIED:
+        message = "位置情報の使用が拒否されました。";
+        detail =
+          "ブラウザのサイト設定で位置情報を「許可」にしてください。また、端末本体（iPhone/Android）の位置情報サービスがONになっているか確認してください。";
+        break;
+      case error.POSITION_UNAVAILABLE:
+        message = "位置情報を取得できませんでした。";
+        detail =
+          "端末のGPSまたはネットワーク測位が利用できない状態です。端末の位置情報サービスがONになっているか確認してください。";
+        break;
+      case error.TIMEOUT:
+        message = "位置情報の取得がタイムアウトしました。";
+        detail = "電波状況を確認して、もう一度お試しください。";
+        break;
+      default:
+        message = "位置情報の取得中に不明なエラーが発生しました。";
+        detail = `エラーコード: ${error.code}`;
+        break;
+    }
+  }
+
+  showGeolocationError(message, detail);
 }
 
 function setLoadingState(isLoading) {
@@ -644,6 +715,10 @@ async function loadVenues() {
 async function loadCurrentLocationVenues() {
   const previousVenues = [...state.venues];
   const previousVenueSource = state.venueSource;
+  const existing = document.getElementById("geo-error-box");
+  if (existing) {
+    existing.remove();
+  }
   if (activeSearchController) {
     activeSearchController.abort();
   }
@@ -696,7 +771,7 @@ async function loadCurrentLocationVenues() {
     if (error.name === "AbortError") {
       return;
     }
-    setStatusMessage("現在地を取得できませんでした。HTTPSで接続しているか確認してください。");
+    setStatusMessage("現在地検索を開始できませんでした。");
     setSourceNote("");
     renderRecommendations();
   } finally {
@@ -709,11 +784,14 @@ async function loadCurrentLocationVenues() {
 
 function getCurrentPosition() {
   return new Promise((resolve, reject) => {
-    navigator.geolocation.getCurrentPosition(resolve, reject, {
-      enableHighAccuracy: true,
-      timeout: 10000,
-      maximumAge: 0,
-    });
+    navigator.geolocation.getCurrentPosition(
+      resolve,
+      (error) => {
+        handleGeolocationError(error);
+        reject(error);
+      },
+      { timeout: 10000, enableHighAccuracy: true }
+    );
   });
 }
 
