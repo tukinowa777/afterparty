@@ -137,6 +137,10 @@ const state = {
 let activeSearchController = null;
 
 const searchButtonBottom = document.getElementById("searchButtonBottom");
+const stationTab = document.getElementById("stationTab");
+const gpsTab = document.getElementById("gpsTab");
+const stationSearchPanel = document.getElementById("stationSearchPanel");
+const gpsSearchPanel = document.getElementById("gpsSearchPanel");
 const lineSelect = document.getElementById("lineSelect");
 const stationSelect = document.getElementById("stationSelect");
 const cuisineSelect = document.getElementById("cuisine");
@@ -345,6 +349,19 @@ function updateSearchModeUi() {
   stationFields.hidden = false;
 }
 
+function setSearchTab(mode) {
+  const isStationMode = mode === "station";
+  state.searchMode = isStationMode ? "station" : "gps";
+  stationTab.classList.toggle("active", isStationMode);
+  gpsTab.classList.toggle("active", !isStationMode);
+  stationTab.setAttribute("aria-selected", String(isStationMode));
+  gpsTab.setAttribute("aria-selected", String(!isStationMode));
+  stationSearchPanel.hidden = !isStationMode;
+  gpsSearchPanel.hidden = isStationMode;
+  stationSearchPanel.classList.toggle("active", isStationMode);
+  gpsSearchPanel.classList.toggle("active", !isStationMode);
+}
+
 function renderLineOptions() {
   const entries = Object.entries(state.lines);
   lineSelect.innerHTML = entries
@@ -374,6 +391,14 @@ function renderStationOptions() {
 }
 
 function bindSearchMode() {
+  stationTab.addEventListener("click", () => {
+    setSearchTab("station");
+  });
+
+  gpsTab.addEventListener("click", () => {
+    setSearchTab("gps");
+  });
+
   lineSelect.addEventListener("change", () => {
     state.selectedLine = lineSelect.value;
     renderStationOptions();
@@ -390,12 +415,19 @@ function bindForm() {
 
 function applyFiltersFromUrl() {
   const params = new URLSearchParams(window.location.search);
+  const searchMode = params.get("searchMode");
   const line = params.get("line");
   const station = params.get("station");
   const cuisine = params.get("cuisine");
   const smoking = params.get("smoking");
   const openAfter21 = params.get("openAfter21");
   const openAfter22 = params.get("openAfter22");
+
+  if (searchMode === "gps") {
+    state.searchMode = "gps";
+  } else {
+    state.searchMode = "station";
+  }
 
   if (line) {
     state.selectedLine = line;
@@ -421,11 +453,13 @@ function applyFiltersFromUrl() {
   }
 
   updateSearchModeUi();
+  setSearchTab(state.searchMode);
 }
 
 function bindSearchButton() {
   searchButtonBottom.addEventListener("click", () => {
     state.searchMode = "station";
+    setSearchTab("station");
     loadVenues();
   });
 }

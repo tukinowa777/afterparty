@@ -104,6 +104,57 @@ h1 {
   align-items: center;
 }
 
+.search-mode-tabs {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.search-mode-tab {
+  border: 1px solid var(--line);
+  background: #fff;
+  color: var(--text);
+  border-radius: 18px;
+  min-height: 50px;
+  padding: 12px 14px;
+  font-size: 0.95rem;
+  font-weight: 800;
+  text-align: center;
+  cursor: pointer;
+}
+
+.search-mode-tab.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+.search-panel {
+  margin-top: 16px;
+}
+
+.search-panel[hidden] {
+  display: none !important;
+}
+
+.gps-panel-card {
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  background: #fff;
+  padding: 18px;
+}
+
+.gps-panel-card h3 {
+  margin: 0 0 8px;
+}
+
+.gps-panel-card p {
+  margin: 0 0 16px;
+  color: var(--subtle);
+  line-height: 1.6;
+}
+
 .filters h2,
 .results h2 {
   margin-top: 0;
@@ -509,6 +560,15 @@ select {
   .search-button,
   .share-button {
     width: 100%;
+  }
+
+  .search-mode-tabs {
+    grid-template-columns: 1fr;
+  }
+
+  .search-mode-tab {
+    min-height: 46px;
+    font-size: 0.9rem;
   }
 
   .hero-subtitle {

@@ -7,7 +7,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="mobile-web-app-capable" content="yes" />
     <title>二次会居酒屋ファインダー</title>
-    <link rel="stylesheet" href="./styles.css?v=20260407g" />
+    <link rel="stylesheet" href="./styles.css?v=20260407h" />
   </head>
   <body>
     <main class="page">
@@ -21,60 +21,75 @@
           <h2>条件を設定</h2>
         </div>
 
-        <div id="stationFields" class="station-fields">
+        <div class="search-mode-tabs" role="tablist" aria-label="検索方法">
+          <button id="stationTab" class="search-mode-tab active" type="button" role="tab" aria-selected="true" aria-controls="stationSearchPanel">駅から条件を設定</button>
+          <button id="gpsTab" class="search-mode-tab" type="button" role="tab" aria-selected="false" aria-controls="gpsSearchPanel">現在地から検索</button>
+        </div>
+
+        <section id="stationSearchPanel" class="search-panel active" role="tabpanel" aria-labelledby="stationTab">
+          <div id="stationFields" class="station-fields">
+            <label class="field">
+              <span>路線</span>
+              <select id="lineSelect"></select>
+            </label>
+
+            <label class="field">
+              <span>駅</span>
+              <select id="stationSelect"></select>
+            </label>
+          </div>
+
           <label class="field">
-            <span>路線</span>
-            <select id="lineSelect"></select>
+            <span>料理ジャンル</span>
+            <select id="cuisine">
+              <option value="any">なんでも</option>
+              <option value="japanese">和食</option>
+              <option value="chinese">中華</option>
+              <option value="western">洋食</option>
+              <option value="yakitori">焼き鳥</option>
+              <option value="yakiniku">焼肉</option>
+              <option value="korean">韓国料理</option>
+              <option value="creative">創作</option>
+            </select>
           </label>
 
           <label class="field">
-            <span>駅</span>
-            <select id="stationSelect"></select>
+            <span>喫煙条件</span>
+            <select id="smoking">
+              <option value="any">どちらでも</option>
+              <option value="non-smoking">禁煙</option>
+              <option value="smoking">喫煙可</option>
+            </select>
           </label>
-        </div>
 
-        <label class="field">
-          <span>料理ジャンル</span>
-          <select id="cuisine">
-            <option value="any">なんでも</option>
-            <option value="japanese">和食</option>
-            <option value="chinese">中華</option>
-            <option value="western">洋食</option>
-            <option value="yakitori">焼き鳥</option>
-            <option value="yakiniku">焼肉</option>
-            <option value="korean">韓国料理</option>
-            <option value="creative">創作</option>
-          </select>
-        </label>
+          <label class="toggle">
+            <div>
+              <span>2次会チェック</span>
+              <p>21:00以降にLOが可能な店だけを残します。</p>
+            </div>
+            <input id="openAfter21" type="checkbox" checked />
+          </label>
 
-        <label class="field">
-          <span>喫煙条件</span>
-          <select id="smoking">
-            <option value="any">どちらでも</option>
-            <option value="non-smoking">禁煙</option>
-            <option value="smoking">喫煙可</option>
-          </select>
-        </label>
+          <label class="toggle">
+            <div>
+              <span>3次会チェック</span>
+              <p>22:00以降にLOが可能な店だけに絞り込みます。</p>
+            </div>
+            <input id="openAfter22" type="checkbox" />
+          </label>
 
-        <label class="toggle">
-          <div>
-            <span>2次会チェック</span>
-            <p>21:00以降にLOが可能な店だけを残します。</p>
+          <div class="filters-actions">
+            <button id="searchButtonBottom" class="search-button" type="button">探す</button>
           </div>
-          <input id="openAfter21" type="checkbox" checked />
-        </label>
+        </section>
 
-        <label class="toggle">
-          <div>
-            <span>3次会チェック</span>
-            <p>22:00以降にLOが可能な店だけに絞り込みます。</p>
+        <section id="gpsSearchPanel" class="search-panel gps-search-panel" role="tabpanel" aria-labelledby="gpsTab" hidden>
+          <div class="gps-panel-card">
+            <h3>現在地から検索</h3>
+            <p>現在地を使って近くの二次会候補を探す画面です。ここは先にUIのみ追加していて、検索処理は次の実装でつなぎます。</p>
+            <button class="search-button" type="button" disabled>現在地で探す</button>
           </div>
-          <input id="openAfter22" type="checkbox" />
-        </label>
-
-        <div class="filters-actions">
-          <button id="searchButtonBottom" class="search-button" type="button">探す</button>
-        </div>
+        </section>
       </section>
 
         <section class="results results-in-hero">
@@ -100,6 +115,6 @@
 
     </main>
 
-    <script src="./app.js?v=20260407g"></script>
+    <script src="./app.js?v=20260407h"></script>
   </body>
   </html>
