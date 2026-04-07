@@ -141,6 +141,7 @@ const stationSelect = document.getElementById("stationSelect");
 const cuisineSelect = document.getElementById("cuisine");
 const smokingSelect = document.getElementById("smoking");
 const openAfter21Checkbox = document.getElementById("openAfter21");
+const openAfter22Checkbox = document.getElementById("openAfter22");
 const resultsHeader = document.getElementById("resultsHeader");
 const resultsPager = document.getElementById("resultsPager");
 const resultsMeta = document.getElementById("resultsMeta");
@@ -222,6 +223,7 @@ function getFilters() {
     cuisine: cuisineSelect.value,
     smoking: smokingSelect.value,
     requireOpenAfter21: openAfter21Checkbox.checked,
+    requireOpenAfter22: openAfter22Checkbox.checked,
   };
 }
 
@@ -235,6 +237,7 @@ function buildSearchParams() {
   params.set("cuisine", filters.cuisine);
   params.set("smoking", filters.smoking);
   params.set("openAfter21", String(filters.requireOpenAfter21));
+  params.set("openAfter22", String(filters.requireOpenAfter22));
 
   return params;
 }
@@ -391,6 +394,7 @@ function applyFiltersFromUrl() {
   const cuisine = params.get("cuisine");
   const smoking = params.get("smoking");
   const openAfter21 = params.get("openAfter21");
+  const openAfter22 = params.get("openAfter22");
 
   if (line) {
     state.selectedLine = line;
@@ -410,6 +414,9 @@ function applyFiltersFromUrl() {
 
   if (openAfter21 === "true" || openAfter21 === "false") {
     openAfter21Checkbox.checked = openAfter21 === "true";
+  }
+  if (openAfter22 === "true" || openAfter22 === "false") {
+    openAfter22Checkbox.checked = openAfter22 === "true";
   }
 
   updateSearchModeUi();
