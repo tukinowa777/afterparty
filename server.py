@@ -28,11 +28,15 @@ APP_USER_AGENT = "afterparty-izakaya-finder/0.1"
 HOTPEPPER_API_KEY = os.environ.get("HOTPEPPER_API_KEY", "").strip()
 stationCoordinateCache = None
 stationLinesIndex = None
+stationNeighborIndex = None
 hotpepperGuideCache = {}
 hotpepperShopPageCache = {}
 stationAccessAliases = {
     "新宿": ["新宿", "新宿三丁目", "新宿西口", "西新宿", "南新宿", "代々木"],
     "渋谷": ["渋谷", "神泉", "表参道"],
+    "表参道": ["表参道", "渋谷", "外苑前", "青山一丁目"],
+    "外苑前": ["外苑前", "青山一丁目", "表参道"],
+    "青山一丁目": ["青山一丁目", "外苑前", "表参道", "乃木坂"],
     "飯田橋": ["飯田橋", "水道橋", "九段下", "神楽坂", "後楽園"],
     "下北沢": ["下北沢", "東北沢", "池ノ上"],
 }
@@ -486,34 +490,41 @@ def fetchHotpepperStationVenues(filters):
 
 
 def loadHotpepperStationCandidates(filters, maxBudget, includeBudget):
-    requestParams = [
-        ("key", HOTPEPPER_API_KEY),
-        ("format", "json"),
-        ("keyword", filters["station"]),
-        ("service_area", "SA11"),
-        ("genre", "G001"),
-        ("genre", "G012"),
-        ("genre", "G014"),
-        ("count", "100"),
-        ("order", "4"),
-    ]
+    shops = []
+    seenShopIds = set()
 
-    if includeBudget:
-        for budgetCode in mapHotpepperBudgetCodes(maxBudget):
-            requestParams.append(("budget", budgetCode))
+    for stationKeyword in buildStationSearchKeywords(filters["station"]):
+        requestParams = [
+            ("key", HOTPEPPER_API_KEY),
+            ("format", "json"),
+            ("keyword", stationKeyword),
+            ("service_area", "SA11"),
+            ("count", "100"),
+            ("order", "4"),
+        ]
 
-    request = Request(
-        f"{HOTPEPPER_GOURMET_API_URL}?{urlencode(requestParams)}",
-        headers={
-            "User-Agent": APP_USER_AGENT,
-            "Accept": "application/json",
-        },
-    )
+        if includeBudget:
+            for budgetCode in mapHotpepperBudgetCodes(maxBudget):
+                requestParams.append(("budget", budgetCode))
 
-    with urlopen(request, timeout=12) as response:
-        payload = json.loads(response.read().decode("utf-8"))
+        request = Request(
+            f"{HOTPEPPER_GOURMET_API_URL}?{urlencode(requestParams)}",
+            headers={
+                "User-Agent": APP_USER_AGENT,
+                "Accept": "application/json",
+            },
+        )
 
-    shops = payload.get("results", {}).get("shop", [])
+        with urlopen(request, timeout=12) as response:
+            payload = json.loads(response.read().decode("utf-8"))
+
+        for shop in payload.get("results", {}).get("shop", []):
+            shopId = shop.get("id")
+            if not shopId or shopId in seenShopIds:
+                continue
+            seenShopIds.add(shopId)
+            shops.append(shop)
+
     normalizedVenues = []
     for shop in shops:
         normalizedVenue = normalizeHotpepperVenue(shop)
@@ -652,6 +663,36 @@ def loadStationLinesIndex():
 
     stationLinesIndex = indexedLines
     return stationLinesIndex
+
+
+def loadStationNeighborIndex():
+    global stationNeighborIndex
+    if stationNeighborIndex is not None:
+        return stationNeighborIndex
+
+    try:
+        rawPayload = STATIONS_PATH.read_text(encoding="utf-8")
+        payload = json.loads(rawPayload)
+    except (FileNotFoundError, json.JSONDecodeError):
+        stationNeighborIndex = {}
+        return stationNeighborIndex
+
+    indexedNeighbors = {}
+    for lineValue in payload.values():
+        stations = lineValue.get("stations", [])
+        for index, stationName in enumerate(stations):
+            if not stationName:
+                continue
+            stationNeighbors = indexedNeighbors.setdefault(stationName, [])
+            previousStation = stations[index - 1] if index > 0 else None
+            nextStation = stations[index + 1] if index + 1 < len(stations) else None
+
+            for neighborName in [previousStation, nextStation]:
+                if neighborName and neighborName != stationName and neighborName not in stationNeighbors:
+                    stationNeighbors.append(neighborName)
+
+    stationNeighborIndex = indexedNeighbors
+    return stationNeighborIndex
 
 
 def reverseGeocodeLocation(latitude, longitude):
@@ -989,6 +1030,26 @@ def buildStationAccessCandidates(stationName, listedStationName):
         candidateNames.append(normalizedListedStation)
 
     return candidateNames
+
+
+def buildStationSearchKeywords(stationName):
+    keywordNames = []
+    normalizedStationName = normalizeStationName(stationName)
+
+    if normalizedStationName:
+        keywordNames.append(normalizedStationName)
+
+    for aliasName in stationAccessAliases.get(normalizedStationName, []):
+        normalizedAliasName = normalizeStationName(aliasName)
+        if normalizedAliasName and normalizedAliasName not in keywordNames:
+            keywordNames.append(normalizedAliasName)
+
+    for neighborName in loadStationNeighborIndex().get(normalizedStationName, []):
+        normalizedNeighborName = normalizeStationName(neighborName)
+        if normalizedNeighborName and normalizedNeighborName not in keywordNames:
+            keywordNames.append(normalizedNeighborName)
+
+    return keywordNames[:5]
 
 
 def normalizeAccessText(accessText):
