@@ -284,6 +284,7 @@ def filterVenues(venues, filters):
     rankedVenues = []
 
     for venue in venues:
+        lastOrderHour = venue.get("lastOrderHour")
         distanceMeters = 0
         if filters["searchMode"] != "station":
             distanceMeters = getDistanceMeters(
@@ -312,10 +313,10 @@ def filterVenues(venues, filters):
         if filters["smoking"] == "smoking" and venue.get("smokingLabel") not in {"喫煙可", "分煙"}:
             continue
 
-        if filters["requireOpenAfter22"] and venue["openUntilHour"] < 22:
+        if filters["requireOpenAfter22"] and (lastOrderHour is None or lastOrderHour < 22):
             continue
 
-        if filters["requireOpenAfter21"] and venue["openUntilHour"] < 21:
+        if filters["requireOpenAfter21"] and (lastOrderHour is None or lastOrderHour < 21):
             continue
 
         walkMinutes = max(1, round(distanceMeters / 80))
@@ -851,6 +852,7 @@ def normalizeHotpepperVenue(shop):
         "accessText": shop.get("access", ""),
         "openUntilHour": openInfo["closeHour"],
         "closeLabel": openInfo["closeLabel"],
+        "lastOrderHour": openInfo["lastOrderHour"],
         "lastOrderLabel": openInfo["lastOrderLabel"],
         "priceRange": priceRange,
         "smokingLabel": normalizeHotpepperSmokingLabel(shop.get("non_smoking", "")),
@@ -1142,10 +1144,12 @@ def normalizeHotpepperOpenInfo(openText, midnightText):
     closeHour = 24 if midnightText == "営業している" else convertHourLabelToValue(closeLabel)
     if closeHour is None:
         closeHour = 24
+    lastOrderHour = convertHourLabelToValue(lastOrderLabel)
 
     return {
         "closeHour": closeHour,
         "closeLabel": closeLabel,
+        "lastOrderHour": lastOrderHour,
         "lastOrderLabel": lastOrderLabel,
     }
 
