@@ -59,10 +59,15 @@ h1 {
 
 .hero-subtitle {
   margin: 10px 0 0;
-  max-width: 28rem;
+  max-width: 34rem;
   font-size: clamp(0.98rem, 1.8vw, 1.25rem);
   line-height: 1.45;
   color: #dfe8f3;
+  text-wrap: balance;
+}
+
+.nowrap {
+  white-space: nowrap;
 }
 
 .chip {
