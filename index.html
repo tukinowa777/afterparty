@@ -7,7 +7,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="mobile-web-app-capable" content="yes" />
     <title>二次会居酒屋ファインダー</title>
-    <link rel="stylesheet" href="./styles.css?v=20260407h" />
+    <link rel="stylesheet" href="./styles.css?v=20260407i" />
   </head>
   <body>
     <main class="page">
@@ -86,8 +86,20 @@
         <section id="gpsSearchPanel" class="search-panel gps-search-panel" role="tabpanel" aria-labelledby="gpsTab" hidden>
           <div class="gps-panel-card">
             <h3>現在地から検索</h3>
-            <p>現在地を使って近くの二次会候補を探す画面です。ここは先にUIのみ追加していて、検索処理は次の実装でつなぎます。</p>
-            <button class="search-button" type="button" disabled>現在地で探す</button>
+            <p>現在地を取得して、近くの二次会候補を探します。</p>
+
+            <label class="field">
+              <span>距離</span>
+              <select id="gpsDistanceFilter">
+                <option value="500">500m以内</option>
+                <option value="1000">1km以内</option>
+                <option value="2000">2km以内</option>
+              </select>
+            </label>
+
+            <div class="filters-actions">
+              <button id="gpsSearchButton" class="search-button" type="button">現在地で探す</button>
+            </div>
           </div>
         </section>
       </section>
@@ -115,6 +127,6 @@
 
     </main>
 
-    <script src="./app.js?v=20260407h"></script>
+    <script src="./app.js?v=20260407i"></script>
   </body>
   </html>

@@ -137,10 +137,12 @@ const state = {
 let activeSearchController = null;
 
 const searchButtonBottom = document.getElementById("searchButtonBottom");
+const gpsSearchButton = document.getElementById("gpsSearchButton");
 const stationTab = document.getElementById("stationTab");
 const gpsTab = document.getElementById("gpsTab");
 const stationSearchPanel = document.getElementById("stationSearchPanel");
 const gpsSearchPanel = document.getElementById("gpsSearchPanel");
+const gpsDistanceFilter = document.getElementById("gpsDistanceFilter");
 const lineSelect = document.getElementById("lineSelect");
 const stationSelect = document.getElementById("stationSelect");
 const cuisineSelect = document.getElementById("cuisine");
@@ -175,6 +177,17 @@ function formatHour(hour) {
   if (hour === 24) return "24:00";
   if (hour > 24) return `${String(hour - 24).padStart(2, "0")}:00`;
   return `${String(hour).padStart(2, "0")}:00`;
+}
+
+function haversineDistance(lat1, lng1, lat2, lng2) {
+  const earthRadius = 6371000;
+  const toRad = (degree) => (degree * Math.PI) / 180;
+  const deltaLat = toRad(lat2 - lat1);
+  const deltaLng = toRad(lng2 - lng1);
+  const aValue =
+    Math.sin(deltaLat / 2) ** 2 +
+    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(deltaLng / 2) ** 2;
+  return earthRadius * 2 * Math.asin(Math.sqrt(aValue));
 }
 
 function formatBusinessHours(venue) {
@@ -217,9 +230,23 @@ function setSourceNote(message) {
 function setLoadingState(isLoading) {
   loadingIndicator.hidden = !isLoading;
   searchButtonBottom.disabled = isLoading;
+  if (gpsSearchButton) {
+    gpsSearchButton.disabled = isLoading;
+  }
 }
 
 function getFilters() {
+  if (state.searchMode === "gps") {
+    return {
+      searchMode: "gps",
+      cuisine: cuisineSelect.value,
+      smoking: smokingSelect.value,
+      requireOpenAfter21: openAfter21Checkbox.checked,
+      requireOpenAfter22: openAfter22Checkbox.checked,
+      distance: parseInt(gpsDistanceFilter.value, 500),
+    };
+  }
+
   return {
     searchMode: "station",
     line: state.selectedLine,
@@ -237,8 +264,12 @@ function buildSearchParams() {
   const params = new URLSearchParams();
 
   params.set("searchMode", filters.searchMode);
-  params.set("line", filters.line);
-  params.set("station", filters.station);
+  if (filters.line) {
+    params.set("line", filters.line);
+  }
+  if (filters.station) {
+    params.set("station", filters.station);
+  }
   params.set("cuisine", filters.cuisine);
   params.set("smoking", filters.smoking);
   params.set("openAfter21", String(filters.requireOpenAfter21));
@@ -251,10 +282,14 @@ function renderEmpty() {
   resultsHeader.hidden = false;
   resultsPager.hidden = true;
   resultsMeta.textContent = "0件ヒット";
+  const emptyMessage =
+    state.searchMode === "gps"
+      ? "現在地の近くで条件に合う店が見つかりませんでした。距離条件を広げるか、もう一度お試しください。"
+      : "指定駅から徒歩10分以内とホットペッパーで確認できる店が見つかりませんでした。路線や駅、料理ジャンルを変えると候補が見つかりやすくなります。";
   resultsList.innerHTML = `
     <article class="empty">
       <h3>条件に合う店がありません</h3>
-      <p>指定駅から徒歩10分以内とホットペッパーで確認できる店が見つかりませんでした。路線や駅、料理ジャンルを変えると候補が見つかりやすくなります。</p>
+      <p>${emptyMessage}</p>
     </article>
   `;
 }
@@ -266,7 +301,7 @@ function renderRecommendations() {
   }
 
   resultsHeader.hidden = false;
-  const searchOriginLabel = `${state.selectedStation}駅`;
+  const searchOriginLabel = state.searchMode === "gps" ? "現在地" : `${state.selectedStation}駅`;
   const pageSize = 3;
   const resultPages = buildResultPages(pageSize);
   resultsPager.hidden = resultPages.length <= 1;
@@ -279,6 +314,10 @@ function renderRecommendations() {
         ${visibleVenues
           .map(
             (venue, index) => {
+              if (state.searchMode === "gps") {
+                return buildGpsResultCard(venue);
+              }
+
               const genreChips = (venue.cuisines || [])
                 .map((item) => cuisineLabels[item])
                 .filter(Boolean)
@@ -320,6 +359,33 @@ function renderRecommendations() {
   resultsList.scrollTo({ left: 0, behavior: "auto" });
   prevResultsButton.disabled = true;
   nextResultsButton.disabled = resultPages.length <= 1;
+}
+
+function buildGpsResultCard(venue) {
+  const distanceMeters = Number.isFinite(venue.distance_m) ? venue.distance_m : 0;
+  const walkMinutes = Math.max(1, Math.round(distanceMeters / 80));
+  const googleMapsUrl = `https://maps.google.com/?q=${encodeURIComponent(venue.name)}`;
+
+  return `
+      <article class="result-card">
+        <div class="result-top">
+          <div class="result-headline">
+            <h3>${venue.name}</h3>
+            <p class="station">徒歩約${walkMinutes}分（${distanceMeters}m）</p>
+          </div>
+        </div>
+        <div class="meta">
+          <span class="pill">${venue.genre || "ジャンル不明"}</span>
+          <span class="pill business-hours-pill">${venue.open || "営業時間不明"}</span>
+          <span class="pill">${venue.budget || "予算要確認"}</span>
+        </div>
+        <p class="features">${venue.access || "アクセス情報はホットペッパーでご確認ください。"}</p>
+        <div class="result-actions">
+          <a class="action-link secondary" href="${venue.urls || googleMapsUrl}" target="_blank" rel="noreferrer">ホットペッパーで見る</a>
+          <a class="action-link primary" href="${googleMapsUrl}" target="_blank" rel="noreferrer">Google Mapsで開く</a>
+        </div>
+      </article>
+    `;
 }
 
 function buildResultsMetaText(pageIndex, resultPages) {
@@ -462,6 +528,14 @@ function bindSearchButton() {
     setSearchTab("station");
     loadVenues();
   });
+
+  if (gpsSearchButton) {
+    gpsSearchButton.addEventListener("click", () => {
+      state.searchMode = "gps";
+      setSearchTab("gps");
+      loadCurrentLocationVenues();
+    });
+  }
 }
 
 function bindResultsPager() {
@@ -565,6 +639,82 @@ async function loadVenues() {
   if (activeSearchController && activeSearchController.signal.aborted === false) {
     activeSearchController = null;
   }
+}
+
+async function loadCurrentLocationVenues() {
+  const previousVenues = [...state.venues];
+  const previousVenueSource = state.venueSource;
+  if (activeSearchController) {
+    activeSearchController.abort();
+  }
+  activeSearchController = new AbortController();
+  setLoadingState(true);
+  setStatusMessage("現在地から候補を検索しています。");
+  setSourceNote("");
+
+  try {
+    const position = await getCurrentPosition();
+    const userLat = position.coords.latitude;
+    const userLng = position.coords.longitude;
+    const response = await fetch(`./api/venues?lat=${userLat}&lng=${userLng}&range=3&count=10`, {
+      headers: {
+        Accept: "application/json",
+      },
+      signal: activeSearchController.signal,
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to load venues: ${response.status}`);
+    }
+
+    const payload = await response.json();
+    const distanceLimit = parseInt(gpsDistanceFilter.value, 500);
+    const venues = (Array.isArray(payload.venues) ? payload.venues : [])
+      .map((venue) => {
+        const distanceMeters = Math.round(
+          haversineDistance(userLat, userLng, Number(venue.lat), Number(venue.lng))
+        );
+        return {
+          ...venue,
+          distance_m: distanceMeters,
+        };
+      })
+      .sort((leftVenue, rightVenue) => leftVenue.distance_m - rightVenue.distance_m)
+      .filter((venue) => venue.distance_m <= distanceLimit)
+      .slice(0, 3);
+
+    state.venues = venues;
+    state.currentPage = 0;
+    state.venueSource = "api";
+    setStatusMessage("現在地から近い候補を表示しています。");
+    setSourceNote(payload.sourceLabel ? `${payload.sourceLabel} を表示しています。` : "");
+    renderRecommendations();
+  } catch (error) {
+    state.venueSource = previousVenueSource;
+    state.venues = previousVenues;
+    state.currentPage = 0;
+    if (error.name === "AbortError") {
+      return;
+    }
+    setStatusMessage("現在地を取得できませんでした。HTTPSで接続しているか確認してください。");
+    setSourceNote("");
+    renderRecommendations();
+  } finally {
+    setLoadingState(false);
+    if (activeSearchController && activeSearchController.signal.aborted === false) {
+      activeSearchController = null;
+    }
+  }
+}
+
+function getCurrentPosition() {
+  return new Promise((resolve, reject) => {
+    navigator.geolocation.getCurrentPosition(resolve, reject, {
+      enableHighAccuracy: true,
+      timeout: 10000,
+      maximumAge: 0,
+    });
+  });
 }
 
 bindForm();

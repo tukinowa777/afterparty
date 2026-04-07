@@ -14,6 +14,12 @@
 
 例: `http://192.168.1.10:8123`
 
+## 現在地検索を使う場合の注意
+
+- PCのlocalhostからアクセスする場合はHTTPで問題なく動作します
+- スマホからアクセスする場合はHTTPS接続が必要です
+- HTTPSで起動するには `bash scripts/start_https.sh` を実行してください
+
 ## HTTPS 起動
 
 - `bash scripts/start_https.sh` を実行する

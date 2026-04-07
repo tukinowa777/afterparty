@@ -74,10 +74,11 @@ class AppRequestHandler(http.server.SimpleHTTPRequestHandler):
 
     def serveVenues(self, queryString):
         filters = parseFilters(queryString)
+        responseLimit = filters["resultCount"] if filters["searchMode"] == "gps" else 12
         try:
             hotpepperVenues, resolvedFilters = fetchHotpepperVenues(filters)
             responsePayload = {
-                "venues": hotpepperVenues[:12],
+                "venues": hotpepperVenues[:responseLimit],
                 "count": len(hotpepperVenues),
                 "filters": resolvedFilters,
                 "source": "hotpepper",
@@ -88,7 +89,7 @@ class AppRequestHandler(http.server.SimpleHTTPRequestHandler):
             try:
                 liveVenues, resolvedFilters = fetchLiveVenues(filters)
                 responsePayload = {
-                    "venues": liveVenues[:12],
+                    "venues": liveVenues[:responseLimit],
                     "count": len(liveVenues),
                     "filters": resolvedFilters,
                     "source": "live",
@@ -157,6 +158,10 @@ class AppRequestHandler(http.server.SimpleHTTPRequestHandler):
 
 def parseFilters(queryString):
     params = parse_qs(queryString)
+    latitude = parseFloat(params.get("lat", params.get("latitude", ["35.6895"]))[0], 35.6895)
+    longitude = parseFloat(params.get("lng", params.get("longitude", ["139.6917"]))[0], 139.6917)
+    hotpepperRange = max(1, min(5, parseInt(params.get("range", ["3"])[0], 3)))
+    resultCount = max(1, min(100, parseInt(params.get("count", ["10"])[0], 10)))
 
     return {
         "searchMode": params.get("searchMode", ["gps"])[0],
@@ -169,8 +174,10 @@ def parseFilters(queryString):
         "maxDistanceMeters": parseInt(params.get("distance", ["2000"])[0], 2000),
         "requireOpenAfter21": params.get("openAfter21", ["true"])[0] != "false",
         "requireOpenAfter22": params.get("openAfter22", ["false"])[0] == "true",
-        "latitude": parseFloat(params.get("latitude", ["35.6895"])[0], 35.6895),
-        "longitude": parseFloat(params.get("longitude", ["139.6917"])[0], 139.6917),
+        "latitude": latitude,
+        "longitude": longitude,
+        "hotpepperRange": hotpepperRange,
+        "resultCount": resultCount,
     }
 
 
@@ -426,12 +433,12 @@ def fetchHotpepperVenues(filters):
     if filters["searchMode"] == "station" and filters["station"]:
         return fetchHotpepperStationVenues(filters)
 
-    resolvedFilters = resolveSearchOrigin(filters)
+    resolvedFilters = filters if filters["searchMode"] == "gps" else resolveSearchOrigin(filters)
     filteredVenues = loadHotpepperCandidates(
         resolvedFilters,
         filters["maxBudget"],
-        mapHotpepperRange(filters["maxDistanceMeters"]),
-        "30",
+        str(filters["hotpepperRange"]),
+        str(filters["resultCount"]),
         True,
     )
     if not filteredVenues and resolvedFilters["searchMode"] == "station":
@@ -840,10 +847,13 @@ def normalizeHotpepperVenue(shop):
         "name": shop.get("name", "店名不明"),
         "latitude": latitude,
         "longitude": longitude,
+        "lat": latitude,
+        "lng": longitude,
         "walkMinutes": 0,
         "stationWalkMinutes": None,
         "nearestStation": shop.get("station_name", "現在地周辺"),
         "accessText": shop.get("access", ""),
+        "access": shop.get("mobile_access") or shop.get("access", ""),
         "openUntilHour": openInfo["closeHour"],
         "closeLabel": openInfo["closeLabel"],
         "lastOrderHour": openInfo["lastOrderHour"],
@@ -851,6 +861,7 @@ def normalizeHotpepperVenue(shop):
         "priceRange": priceRange,
         "smokingLabel": normalizeHotpepperSmokingLabel(shop.get("non_smoking", "")),
         "genreLabel": shop.get("genre", {}).get("name", ""),
+        "genre": shop.get("genre", {}).get("name", ""),
         "subGenreLabel": shop.get("sub_genre", {}).get("name", ""),
         "minPartySize": 1,
         "maxPartySize": parseInt(shop.get("party_capacity"), 12),
@@ -858,8 +869,11 @@ def normalizeHotpepperVenue(shop):
         "features": features,
         "address": shop.get("address", ""),
         "hotpepperUrl": shop.get("urls", {}).get("pc", ""),
+        "urls": shop.get("urls", {}).get("pc", ""),
         "photoUrl": shop.get("photo", {}).get("pc", {}).get("m", ""),
         "budgetText": shop.get("budget", {}).get("average", "") or shop.get("budget", {}).get("name", ""),
+        "budget": shop.get("budget", {}).get("average", "") or shop.get("budget", {}).get("name", ""),
+        "open": shop.get("open", ""),
     }
 
 
@@ -1240,10 +1254,17 @@ def normalizeOsmVenue(element, filters):
         "name": venueName,
         "latitude": latitude,
         "longitude": longitude,
+        "lat": latitude,
+        "lng": longitude,
         "walkMinutes": 0,
         "nearestStation": nearestStation,
         "openUntilHour": openUntilHour,
+        "open": tags.get("opening_hours", ""),
         "priceRange": priceRange,
+        "genre": tags.get("cuisine", "") or "不明",
+        "budget": "要確認",
+        "access": buildAreaLabel(tags),
+        "urls": "",
         "minPartySize": 1,
         "maxPartySize": 12,
         "cuisines": cuisineKeys,
