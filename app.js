@@ -143,6 +143,9 @@ const gpsTab = document.getElementById("gpsTab");
 const stationSearchPanel = document.getElementById("stationSearchPanel");
 const gpsSearchPanel = document.getElementById("gpsSearchPanel");
 const gpsDistanceFilter = document.getElementById("gpsDistanceFilter");
+const gpsLocationInfo = document.getElementById("gpsLocationInfo");
+const gpsLocationCoords = document.getElementById("gpsLocationCoords");
+const gpsLocationAccuracy = document.getElementById("gpsLocationAccuracy");
 const lineSelect = document.getElementById("lineSelect");
 const stationSelect = document.getElementById("stationSelect");
 const cuisineSelect = document.getElementById("cuisine");
@@ -304,6 +307,20 @@ function setLoadingState(isLoading) {
   if (gpsSearchButton) {
     gpsSearchButton.disabled = isLoading;
   }
+}
+
+function renderGpsLocation(position) {
+  if (!gpsLocationInfo || !gpsLocationCoords || !gpsLocationAccuracy) {
+    return;
+  }
+
+  const latitude = position.coords.latitude.toFixed(6);
+  const longitude = position.coords.longitude.toFixed(6);
+  const accuracy = Math.round(position.coords.accuracy || 0);
+
+  gpsLocationCoords.textContent = `緯度 ${latitude} / 経度 ${longitude}`;
+  gpsLocationAccuracy.textContent = `精度 約${accuracy}m`;
+  gpsLocationInfo.hidden = false;
 }
 
 function getFilters() {
@@ -729,6 +746,7 @@ async function loadCurrentLocationVenues() {
 
   try {
     const position = await getCurrentPosition();
+    renderGpsLocation(position);
     const userLat = position.coords.latitude;
     const userLng = position.coords.longitude;
     const response = await fetch(`./api/venues?lat=${userLat}&lng=${userLng}&range=3&count=10`, {

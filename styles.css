@@ -131,6 +131,33 @@ h1 {
   color: #888;
 }
 
+.gps-location-info {
+  margin-top: 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.82);
+}
+
+.gps-location-title {
+  margin: 0 0 6px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.gps-location-coords,
+.gps-location-accuracy {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--subtle);
+}
+
+.gps-location-accuracy {
+  margin-top: 2px;
+}
+
 .filters {
   background: var(--panel);
   padding: 24px;
