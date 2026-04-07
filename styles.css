@@ -59,15 +59,10 @@ h1 {
 
 .hero-subtitle {
   margin: 10px 0 0;
-  max-width: 34rem;
-  font-size: clamp(0.98rem, 1.8vw, 1.25rem);
-  line-height: 1.45;
+  max-width: none;
+  font-size: clamp(0.76rem, 2.1vw, 1.2rem);
+  line-height: 1.35;
   color: #dfe8f3;
-  text-wrap: balance;
-}
-
-.nowrap {
-  white-space: nowrap;
 }
 
 .chip {
@@ -511,7 +506,9 @@ select {
   }
 
   .hero-subtitle {
-    max-width: 19rem;
+    max-width: none;
+    font-size: clamp(0.68rem, 3.2vw, 0.92rem);
+    line-height: 1.3;
   }
 
   .result-card {
