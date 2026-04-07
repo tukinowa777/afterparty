@@ -556,12 +556,15 @@ select {
   }
 
   .pill {
-    font-size: 0.72rem;
-    line-height: 1.3;
+    font-size: 0.7rem;
+    line-height: 1.25;
+    padding: 5px 8px;
   }
 
   .business-hours-pill {
     grid-column: 1 / -1;
+    font-size: 0.67rem;
+    line-height: 1.25;
   }
 
   .genres {
