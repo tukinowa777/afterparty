@@ -51,6 +51,12 @@ class AppRequestHandler(http.server.SimpleHTTPRequestHandler):
         self.projectDirectory = Path(directory or ".").resolve()
         super().__init__(*args, directory=str(self.projectDirectory), **kwargs)
 
+    def end_headers(self):
+        parsedUrl = urlparse(self.path)
+        if parsedUrl.path in {"/", "/index.html"} or parsedUrl.path.endswith((".css", ".js")):
+            self.send_header("Cache-Control", "no-store")
+        super().end_headers()
+
     def do_GET(self):
         parsedUrl = urlparse(self.path)
 
@@ -93,26 +99,14 @@ class AppRequestHandler(http.server.SimpleHTTPRequestHandler):
                 self.send_error(500, "venues data is invalid")
                 return
             except (HTTPError, URLError, TimeoutError, ValueError):
-                try:
-                    fallbackPayload = loadSampleVenues(filters)
-                    responsePayload = {
-                        **fallbackPayload,
-                        "source": "sample",
-                        "sourceLabel": "内蔵サンプルデータ",
-                        "attribution": "",
-                    }
-                except (FileNotFoundError, json.JSONDecodeError):
-                    self.send_error(500, "venues data is invalid")
-                    return
-                except (HTTPError, URLError, TimeoutError, ValueError):
-                    responsePayload = {
-                        "venues": [],
-                        "count": 0,
-                        "filters": filters,
-                        "source": "empty",
-                        "sourceLabel": "検索結果なし",
-                        "attribution": "",
-                    }
+                responsePayload = {
+                    "venues": [],
+                    "count": 0,
+                    "filters": filters,
+                    "source": "empty",
+                    "sourceLabel": "検索結果なし",
+                    "attribution": "",
+                }
 
         responseBody = json.dumps(responsePayload, ensure_ascii=False).encode("utf-8")
 

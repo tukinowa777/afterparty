@@ -134,6 +134,7 @@ const state = {
   autoLocateAttempted: false,
   currentPage: 0,
 };
+let activeSearchController = null;
 
 const searchButtonBottom = document.getElementById("searchButtonBottom");
 const lineSelect = document.getElementById("lineSelect");
@@ -468,6 +469,12 @@ function updateResultsPagerState() {
 
 async function loadVenues() {
   const queryString = buildSearchParams().toString();
+  const previousVenues = [...state.venues];
+  const previousVenueSource = state.venueSource;
+  if (activeSearchController) {
+    activeSearchController.abort();
+  }
+  activeSearchController = new AbortController();
   state.lastQueryString = queryString;
   setLoadingState(true);
   setStatusMessage("条件に合う店舗データを検索しています。");
@@ -477,6 +484,7 @@ async function loadVenues() {
       headers: {
         Accept: "application/json",
       },
+      signal: activeSearchController.signal,
     });
 
     if (!response.ok) {
@@ -492,7 +500,7 @@ async function loadVenues() {
     state.currentPage = 0;
     state.venueSource = "api";
     history.replaceState(null, "", `?${queryString}`);
-    setStatusMessage("条件に合う候補を表示しています。カテゴリごとに3件ずつ確認できます。");
+    setStatusMessage("条件に合う候補を表示しています。3件ずつ確認できます。");
     setSourceNote(
       payload.source === "live"
         ? `${payload.sourceLabel} を利用しています。${payload.attribution ?? ""}`.trim()
@@ -502,12 +510,15 @@ async function loadVenues() {
     if (state.lastQueryString !== queryString) {
       return;
     }
+    if (error.name === "AbortError") {
+      return;
+    }
 
-    state.venueSource = "fallback";
-    state.venues = fallbackVenues.slice(0, 3);
+    state.venueSource = previousVenueSource;
+    state.venues = previousVenues;
     state.currentPage = 0;
-    setStatusMessage("APIの取得に失敗したため、内蔵サンプルデータを3件表示しています。");
-    setSourceNote("内蔵サンプルデータを表示しています。");
+    setStatusMessage("検索に失敗しました。通信状況を確認して、もう一度お試しください。");
+    setSourceNote("");
   }
 
   if (state.lastQueryString === queryString) {
@@ -516,6 +527,9 @@ async function loadVenues() {
 
   if (state.lastQueryString === queryString) {
     setLoadingState(false);
+  }
+  if (activeSearchController && activeSearchController.signal.aborted === false) {
+    activeSearchController = null;
   }
 }
 
