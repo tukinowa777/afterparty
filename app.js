@@ -293,7 +293,7 @@ function renderRecommendations() {
         </div>
         <div class="meta">
           <span class="pill">徒歩${venue.walkMinutes}分</span>
-          <span class="pill">${formatBusinessHours(venue)}</span>
+          <span class="pill business-hours-pill">${formatBusinessHours(venue)}</span>
           <span class="pill">${venue.smokingLabel || "要確認"}</span>
         </div>
         ${genreChips ? `<div class="genres">${genreChips}</div>` : ""}

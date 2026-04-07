@@ -382,6 +382,12 @@ select {
   text-overflow: ellipsis;
 }
 
+.business-hours-pill {
+  white-space: normal;
+  overflow: visible;
+  text-overflow: clip;
+}
+
 .genres {
   margin: 0;
   display: inline-flex;
@@ -552,6 +558,10 @@ select {
   .pill {
     font-size: 0.72rem;
     line-height: 1.3;
+  }
+
+  .business-hours-pill {
+    grid-column: 1 / -1;
   }
 
   .genres {
