@@ -243,7 +243,7 @@ function getFilters() {
       smoking: smokingSelect.value,
       requireOpenAfter21: openAfter21Checkbox.checked,
       requireOpenAfter22: openAfter22Checkbox.checked,
-      distance: parseInt(gpsDistanceFilter.value, 500),
+      distance: parseInt(gpsDistanceFilter.value, 10),
     };
   }
 
@@ -668,7 +668,7 @@ async function loadCurrentLocationVenues() {
     }
 
     const payload = await response.json();
-    const distanceLimit = parseInt(gpsDistanceFilter.value, 500);
+    const distanceLimit = parseInt(gpsDistanceFilter.value, 10);
     const venues = (Array.isArray(payload.venues) ? payload.venues : [])
       .map((venue) => {
         const distanceMeters = Math.round(
